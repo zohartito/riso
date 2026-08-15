@@ -222,13 +222,35 @@ same measurement is close to zero.
 
 **What the sheet still gets wrong — read before Phase 5:**
 
-- **The mosaic ref draws outlines, and the look spec forbids them.** Its thin
-  region borders transfer: the darkest ink is 55.7% solid under a 2px erosion
-  in the Phase 4 crowd panel, against 89–95% in every Phase 3 panel — solid
-  masses became line work. `style-flat-planes.png` is committed as the
-  outline-free alternative and is one line away in `styles/tennis.toml`; it
-  produces emptier, weaker compositions. **This trade is Zohar's call.**
+- **The output has outlines and the look spec forbids them.** ~~The mosaic ref
+  draws them.~~ **Corrected in Phase 5: the model draws them, not the
+  reference** — the raw generation already contains contour lines with every
+  reference tested, and the erosion measurement originally cited here does not
+  detect outlines at all. Full retraction in `refs/srefs.md` rule 4, evidence
+  in `docs/outlines-come-from-the-model.png`. Still unsolved.
 - Panel 2 is a failure, and picking a different seed would not fix it.
+
+### Phase 5a — the reference A/B, so the choice is between two visible things
+
+`docs/phase5-planes-sheet.png` is `docs/phase4-contact-sheet.png` with one
+variable changed: `style-flat-planes.png` instead of `style-flat-mosaic.png`.
+Same three subjects, same seed 1, same preset, same post-pass. `tennis.toml`
+was switched to generate it and switched straight back — **the preset still
+ships the mosaic ref**, pending the call.
+
+What the pair actually shows, panel by panel:
+
+| | mosaic (phase 4) | planes (phase 5) |
+|---|---|---|
+| 1 crowd | dense, fills the lower half, chartreuse ground | sparser, more empty cream, pink ground |
+| 2 serve | no subject | no subject |
+| 3 handshake | reads as two hands | one figure, does not read |
+
+**The decision is about density and composition, and nothing else.** Both
+references outline identically, both fail the sparse subject identically, and
+the biggest-ink share is 59% for both — so emptiness is the subject's, not the
+reference's. On this evidence the mosaic ref wins on the only axis that
+separates them, which is the opposite of what the outline claim implied.
 
 ### Subject selection is part of the style
 

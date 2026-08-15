@@ -101,15 +101,38 @@ most of the frame empty. The share of the frame taken by the single biggest
 ink was identical at 59% for all three references tested — so density changes
 what fills the frame, not how much of it is filled.
 
-**4. Edge quality transfers, including borders.** `style-flat-mosaic.png` has
-thin borders between its regions, and its output draws **thin dark outlines
-around figures** — measured, not eyeballed: the darkest ink is 55.7% solid
-under a 2px erosion in the Phase 4 crowd panel against 89–95% in every Phase 3
-panel, i.e. the dark ink went from solid masses to line work. **This violates
-the "no outlines" bullet in the look spec.** `style-flat-planes.png` has no
-borders and does not do it — and produces weaker, emptier compositions. That
-trade is unresolved and is a decision for Zohar, not for this file: switching
-is one line in `styles/tennis.toml`.
+**4. Outlines come from the model, not from the reference. ~~Edge quality
+transfers, including borders.~~ — corrected 2026-08-15, see below.**
+
+The original claim here was that `style-flat-mosaic.png`'s thin region borders
+transfer as outlines around figures, on the strength of a 2px-erosion measure
+of the darkest ink: 55.7% solid in the Phase 4 crowd panel against 89–95% in
+Phase 3. **That claim was wrong and the measurement did not support it.**
+
+What actually happens, visible in `docs/outlines-come-from-the-model.png`: the
+**raw generation already contains the outlines**, before the post-pass touches
+it, with the bordered reference and the border-free one alike. `palette_lock`
+carries them through; it does not create them. Flux draws contour lines when
+asked for "flat editorial illustration" of a crowd, and that is the source.
+
+Two ways the original reasoning failed, both worth remembering:
+
+- **The metric measured the wrong thing.** 2px erosion asks whether the darkest
+  ink is *blobby*, not whether outlines exist. A crowd of small dark heads is
+  thin dark structure and scores low with no outlines present at all, and a
+  frame with one big dark plane scores high with outlines all over it — which
+  is exactly what happened: adding a "no outlines" clause to the prompt moved
+  the planes ref from 39.4% to 92.7% while the outlines stayed visibly on the
+  figures. **Do not use erosion solidity as an outline detector.**
+- **The comparison was not like for like.** The Phase 3 numbers came from the
+  published sheet and the Phase 4 numbers from full-resolution frames. Measured
+  identically afterwards, the border-free planes ref scored *worse* than the
+  bordered mosaic ref (48.7% against 55.7%) — the opposite of the claim.
+
+Prompt-side removal was tried and does not work either: a "no outlines, no
+linework, no contour lines" clause left the linework in place on both
+references. **The outlines are unsolved, they are a look-spec violation, and
+they are not a reason to prefer one reference over the other.**
 
 **5. A sparse subject renders as the reference, whatever the reference is.**
 "A tennis player mid-serve seen from the baseline" was run against four
@@ -158,8 +181,7 @@ with no tennis player anywhere in the frame. Rejected on the strength of this
 one image, despite the middle panel.
 
 `style-flat-mosaic.png` shipped instead — not because it is clean, but because
-it fails less badly on sparse subjects. It carries its own violation (rule 4,
-outlines), which is recorded there rather than hidden.
+it fails less badly on sparse subjects.
 
 ## Hit rate (measured 2026-08-15, the number to quote)
 
