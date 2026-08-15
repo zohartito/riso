@@ -1,0 +1,119 @@
+{
+  "checkpoint": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-schnell-fp8.safetensors"
+    },
+    "_meta": {
+      "title": "Base model - schnell fp8, Apache-2.0"
+    }
+  },
+  "positive": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["checkpoint", 1],
+      "text": "a crowd of tennis spectators seen from behind"
+    },
+    "_meta": {
+      "title": "Subject prompt - overridden per run"
+    }
+  },
+  "negative": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["checkpoint", 1],
+      "text": ""
+    },
+    "_meta": {
+      "title": "Unused at cfg 1.0, but KSampler requires it"
+    }
+  },
+  "style_ref": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "style-riso-poster.png"
+    },
+    "_meta": {
+      "title": "Style reference - uploaded from refs/ before the run"
+    }
+  },
+  "clip_vision": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": {
+      "clip_name": "sigclip_vision_patch14_384.safetensors"
+    },
+    "_meta": {
+      "title": "SigLIP - how Redux reads the reference"
+    }
+  },
+  "style_encode": {
+    "class_type": "CLIPVisionEncode",
+    "inputs": {
+      "clip_vision": ["clip_vision", 0],
+      "image": ["style_ref", 0],
+      "crop": "center"
+    }
+  },
+  "redux": {
+    "class_type": "StyleModelLoader",
+    "inputs": {
+      "style_model_name": "flux1-redux-dev.safetensors"
+    },
+    "_meta": {
+      "title": "Redux adapter - FLUX.1-dev Non-Commercial License"
+    }
+  },
+  "style_apply": {
+    "class_type": "StyleModelApply",
+    "inputs": {
+      "conditioning": ["positive", 0],
+      "style_model": ["redux", 0],
+      "clip_vision_output": ["style_encode", 0],
+      "strength": 0.1,
+      "strength_type": "multiply"
+    },
+    "_meta": {
+      "title": "Style vs subject balance - usable band is 0.05-0.15, 0.10 centred"
+    }
+  },
+  "latent": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "sampler": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["checkpoint", 0],
+      "positive": ["style_apply", 0],
+      "negative": ["negative", 0],
+      "latent_image": ["latent", 0],
+      "seed": 0,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "schnell: 4 steps, cfg 1.0"
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["sampler", 0],
+      "vae": ["checkpoint", 2]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["decode", 0],
+      "filename_prefix": "riso"
+    }
+  }
+}
