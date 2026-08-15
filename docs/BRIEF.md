@@ -249,8 +249,36 @@ What the pair actually shows, panel by panel:
 **The decision is about density and composition, and nothing else.** Both
 references outline identically, both fail the sparse subject identically, and
 the biggest-ink share is 59% for both — so emptiness is the subject's, not the
-reference's. On this evidence the mosaic ref wins on the only axis that
-separates them, which is the opposite of what the outline claim implied.
+reference's.
+
+**Settled 2026-08-15: the mosaic ref stays, and this is not to be reopened.**
+The only argument for the planes ref was outlines, and outlines turned out to
+come from the model. On the axis that actually separates them the mosaic wins
+two panels of three. `docs/phase5-planes-sheet.png` is kept as the record.
+
+### Phase 5b — the outlines are fixed, by one phrase
+
+`docs/outlines-fixed-by-the-medium-word.png`, and the sheet it produces is
+`docs/phase5-outline-fix-sheet.png`.
+
+The prompt said "flat editorial illustration", which in training data means
+vector line art. Naming a paper medium instead — **"torn paper collage, matte
+paper shapes"** — drops thin-dark-line coverage from 3.64% to 0.31%, against a
+0.00–0.04% floor for genuinely line-free images. The look spec's "no outlines"
+bullet is now met.
+
+Three things learned that generalise past this repo:
+
+- **Substitution beats deletion and negation.** A "no outlines" clause moved
+  the number from 3.64% to 3.75%, i.e. not at all. The model does not take
+  instruction not to draw something; it takes instruction to draw a different
+  thing.
+- **Validate a metric before you trust it.** The erosion measure that blamed
+  the reference was never tested against a known-positive and a
+  known-negative. Its replacement was, before it was used.
+- **The fix is not free.** `docs/outline-fix-what-it-costs.png`: the paper
+  wording draws smaller figures packed denser; the illustration wording drew
+  larger, crisper ones. The spec decides it, but Zohar can overrule on sight.
 
 ### Subject selection is part of the style
 

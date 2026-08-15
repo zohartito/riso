@@ -129,10 +129,57 @@ Two ways the original reasoning failed, both worth remembering:
   identically afterwards, the border-free planes ref scored *worse* than the
   bordered mosaic ref (48.7% against 55.7%) — the opposite of the claim.
 
-Prompt-side removal was tried and does not work either: a "no outlines, no
-linework, no contour lines" clause left the linework in place on both
-references. **The outlines are unsolved, they are a look-spec violation, and
-they are not a reason to prefer one reference over the other.**
+**Solved the same day — by one phrase in the prompt.** See the section below.
+The outlines were never a reference property, so they were never a reason to
+prefer one reference over the other.
+
+## The medium word is the outline switch
+
+`docs/outlines-fixed-by-the-medium-word.png` — raw and finished, both prompts.
+
+The prompt said **"flat editorial illustration"**, and that phrase is not
+neutral: it means vector line art, which is outlined by convention. Every crowd
+came back in heavy black contours. Naming a **paper** medium instead removes
+them completely:
+
+| prompt phrase | thin dark lines (mean of 3 seeds) |
+|---|---|
+| flat editorial illustration (was shipped) | 3.64% |
+| + "no outlines, no linework" clause | 3.75% — **negation does nothing** |
+| flat screenprint | 3.13% |
+| flat colour-block poster | 2.57% |
+| flat cut-paper collage | 1.79% |
+| **torn paper collage, matte paper shapes** | **0.31%** — what `tennis` ships |
+
+For scale: a genuinely line-free image measures 0.00–0.04% on the same metric.
+0.31% is the floor, not a partial win.
+
+**Substitute, do not delete or negate.** Deleting the phrase leaves a gap the
+model fills from the same convention, and a negative clause is ignored outright
+— 3.64% to 3.75% is noise. Only naming a different medium steers it. The
+reference artists' own language is print and paper, not illustration, and that
+turned out to be the whole difference.
+
+### How to measure it — and how not to
+
+`line_fraction`: a pixel counts as line if it is more than 0.10 Oklab lighter
+3px away on **both** sides, in either axis. A plate boundary fails (one side
+only), a large dark mass fails (both sides equally dark), grain fails
+(measured pre-grain). Validated before use: 0.00% on the border-free ref,
+0.04% on the bordered one, 1.75% on a raw crowd with visible contours.
+
+The metric this replaces — erosion solidity — measured whether the dark ink was
+blobby and was wrong for the job, which is how the reference got blamed for the
+model's linework. **Validate a metric on a known-positive and a known-negative
+before drawing a conclusion from it.**
+
+### What it costs
+
+`docs/outline-fix-what-it-costs.png` — three seeds, both prompts, whole frame.
+Not free: the paper wording draws smaller figures packed denser, where the
+illustration wording drew larger, crisper, individually-legible ones. The look
+spec is unambiguous that forms read by colour adjacency only, so the clean
+version ships, but the trade is real and visible in that image.
 
 **5. A sparse subject renders as the reference, whatever the reference is.**
 "A tennis player mid-serve seen from the baseline" was run against four

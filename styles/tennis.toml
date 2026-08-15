@@ -25,7 +25,14 @@ steps = 4                # schnell; 8 was measured and changes nothing
 # the subject is sharp but renders photoreal. Saying "flat" in words carries
 # the rendering mode, which frees the strength down to 0.08 where the subject
 # survives every seed tested. Measured 2026-08-15, 6 seeds per setting.
-prompt_suffix = ", flat editorial illustration, solid blocks of colour, no shading, no gradients, bold simple shapes"
+#
+# The medium word is the outline switch, and it is not a neutral phrase. This
+# said "flat editorial illustration" until 2026-08-15 and every crowd came back
+# in heavy contour lines, because that phrase means vector line art. Naming a
+# paper medium instead drops thin-dark-line coverage from 3.64% to 0.31% —
+# a look-spec violation removed by two words. Deleting the phrase does not
+# work and a "no outlines" clause does not work; only substitution does.
+prompt_suffix = ", torn paper collage, matte paper shapes, solid blocks of colour, no shading, no gradients, bold simple shapes"
 
 [post]
 palette = "tennis-felt"
