@@ -13,7 +13,7 @@ uniform across the full frame.
 
 Note that `halftone` and `grain` intentionally introduce colours outside the
 palette — that is ink overlay and paper texture, not a bug. `palette_lock` on
-its own is the step that guarantees exactly N colours.
+its own is the step that holds the image to the palette and nothing else.
 """
 
 from __future__ import annotations
@@ -133,17 +133,11 @@ def _shift_plane(plane: np.ndarray, dx: int, dy: int) -> np.ndarray:
 # --------------------------------------------------------------------------
 
 
-def palette_lock(img: Image.Image, palette: Palette) -> Image.Image:
-    """Quantise every pixel to its nearest palette colour, in Oklab.
+PALETTE_MODES = ("nearest", "luma")
 
-    Hard nearest-colour, no dithering: the look is flat plates, and dithering
-    would smuggle gradients back in.
-    """
-    colors = [tuple(int(c) for c in entry) for entry in palette]
-    if len(colors) < 2:
-        raise ValueError(f"palette needs at least 2 colours, got {len(colors)}")
 
-    arr = _to_array(img)
+def _lock_nearest(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
+    """Index of the nearest swatch to each pixel, measured in Oklab."""
     pixels = _srgb_to_oklab(arr.astype(np.float32) / 255.0)
     swatches = _srgb_to_oklab(np.asarray(colors, dtype=np.float32) / 255.0)
 
@@ -157,8 +151,86 @@ def palette_lock(img: Image.Image, palette: Palette) -> Image.Image:
         closer = distance < best_distance
         best_distance = np.where(closer, distance, best_distance)
         best_index = np.where(closer, index, best_index)
+    return best_index
 
-    return _to_image(np.asarray(colors, dtype=np.uint8)[best_index])
+
+def _oklab_lightness(arr: np.ndarray) -> np.ndarray:
+    return _srgb_to_oklab(arr.astype(np.float32) / 255.0)[..., 0]
+
+
+def tonal_span(img: Image.Image) -> float:
+    """Oklab lightness range of an image, ignoring the outer 2% at each end.
+
+    The number `luma` mode separates on. Near zero means the frame carries no
+    form at all — which is how a failed generation looks, and worth checking
+    before a post-pass dresses it up.
+    """
+    low, high = np.percentile(_oklab_lightness(_to_array(img)), (2.0, 98.0))
+    return float(high) - float(low)
+
+
+# Below this the frame is featureless: what is left is sampling noise, and
+# stretching it across the palette turns that noise into speckle.
+FLAT_FRAME_SPAN = 0.02
+
+
+def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
+    """Index of the swatch whose lightness rank matches each pixel's band.
+
+    A separation, not a colour match: the image is cut into as many equal
+    lightness bands as there are inks, and the inks are laid on darkest-first.
+    """
+    lightness = _oklab_lightness(arr)
+    swatch_lightness = _srgb_to_oklab(np.asarray(colors, dtype=np.float32) / 255.0)[
+        ..., 0
+    ]
+    ranked = np.argsort(swatch_lightness, kind="stable")
+
+    # Clipped to the 2nd–98th percentile: one stray specular pixel would
+    # otherwise stretch the range and shift every band, and two images in a
+    # series have to separate the same way to read as a series.
+    low, high = np.percentile(lightness, (2.0, 98.0))
+    span = float(high) - float(low)
+
+    if span < FLAT_FRAME_SPAN:
+        # Nothing to separate. Lay a single ink rather than amplifying noise,
+        # so a dead frame still looks dead.
+        nearest = int(np.argmin(np.abs(swatch_lightness - float(lightness.mean()))))
+        return np.full(lightness.shape, nearest, dtype=np.intp)
+
+    bands = len(colors)
+    band = np.clip(
+        np.floor((lightness - float(low)) / span * bands).astype(np.intp), 0, bands - 1
+    )
+    return ranked[band]
+
+
+def palette_lock(
+    img: Image.Image, palette: Palette, mode: str = "nearest"
+) -> Image.Image:
+    """Quantise every pixel to a palette colour. No dithering, ever — the look
+    is flat plates and dithering would smuggle gradients back in.
+
+    Two mappings, because they fail in opposite directions:
+
+    ``nearest`` (default) picks the closest swatch in Oklab. Right when the
+    source already lives near the palette. When it does not — and Redux output
+    rarely does, since the reference contributes flatness but not hue — every
+    pixel can land on the *same* swatch and the image collapses to one field.
+
+    ``luma`` ignores source hue and maps lightness bands onto the palette's own
+    lightness order. Form always survives, so it is the mapping a generated
+    frame wants; the cost is that source colour no longer chooses the ink.
+    """
+    colors = [tuple(int(c) for c in entry) for entry in palette]
+    if len(colors) < 2:
+        raise ValueError(f"palette needs at least 2 colours, got {len(colors)}")
+    if mode not in PALETTE_MODES:
+        raise ValueError(f"mode must be one of {PALETTE_MODES}, got {mode!r}")
+
+    arr = _to_array(img)
+    index = _lock_nearest(arr, colors) if mode == "nearest" else _lock_luma(arr, colors)
+    return _to_image(np.asarray(colors, dtype=np.uint8)[index])
 
 
 def grain(img: Image.Image, amount: float, seed: int, scale: int = 2) -> Image.Image:
@@ -270,12 +342,19 @@ def compose(img: Image.Image, preset: Preset) -> Image.Image:
 
         {
             "palette": "tennis-felt",
+            "palette_mode": "luma",   # "nearest" (default) or "luma"
             "halftone": {"angle": 15, "cell": 4, "strength": 0.25},
             "misregister": {"px": 2},
             "grain": {"amount": 0.12, "seed": 7},
         }
     """
-    unknown = set(preset) - {"palette", "halftone", "misregister", "grain"}
+    unknown = set(preset) - {
+        "palette",
+        "palette_mode",
+        "halftone",
+        "misregister",
+        "grain",
+    }
     if unknown:
         raise ValueError(f"unknown preset keys: {sorted(unknown)}")
 
@@ -285,7 +364,7 @@ def compose(img: Image.Image, preset: Preset) -> Image.Image:
         colors = (
             load_palette(palette) if isinstance(palette, (str, Path)) else list(palette)
         )
-        out = palette_lock(out, colors)
+        out = palette_lock(out, colors, preset.get("palette_mode", "nearest"))
 
     screen = preset.get("halftone")
     if screen is not None:

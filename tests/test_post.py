@@ -105,6 +105,72 @@ def test_palette_lock_rejects_a_one_color_palette():
         post.palette_lock(_noise_image(), [(0, 0, 0)])
 
 
+# --- luma mode: the separation that survives an off-palette source ----------
+
+
+def _blue_ramp() -> Image.Image:
+    """A frame like Redux actually returns: all one hue, nothing near the palette."""
+    height, width = 64, 64
+    ramp = np.linspace(40, 210, height, dtype=np.uint8)[:, None].repeat(width, axis=1)
+    arr = np.zeros((height, width, 3), dtype=np.uint8)
+    arr[..., 2] = ramp
+    arr[..., 0] = ramp // 4
+    return Image.fromarray(arr, mode="RGB")
+
+
+def test_luma_mode_keeps_form_where_nearest_collapses_it():
+    palette = post.load_palette("tennis-felt")
+    source = _blue_ramp()
+    assert len(_unique_colors(post.palette_lock(source, palette))) <= 2
+    assert len(_unique_colors(post.palette_lock(source, palette, "luma"))) == len(palette)
+
+
+def test_luma_mode_lays_ink_down_dark_to_light():
+    """Darker source, darker ink — the ordering is the whole mechanism."""
+    palette = post.load_palette("riso-nightsea")
+    locked = np.asarray(post.palette_lock(_blue_ramp(), palette, "luma"), dtype=np.float32)
+    lightness = post._srgb_to_oklab(locked / 255.0)[..., 0]
+    assert np.all(np.diff(lightness.mean(axis=1)) >= 0)
+
+
+def test_luma_mode_never_invents_a_color():
+    palette = post.load_palette("riso-nightsea")
+    locked = post.palette_lock(_noise_image(seed=5), palette, "luma")
+    assert _unique_colors(locked) <= set(palette)
+
+
+def test_luma_mode_lays_one_ink_on_a_featureless_frame():
+    """A dead generation must stay dead, not become speckle."""
+    palette = post.load_palette("tennis-felt")
+    arr = np.full((32, 32, 3), 90, dtype=np.uint8)
+    arr[..., 2] = 180
+    arr[::2, ::2, 2] = 181  # sampling noise, nothing more
+    flat = Image.fromarray(arr, mode="RGB")
+
+    assert post.tonal_span(flat) < post.FLAT_FRAME_SPAN
+    assert len(_unique_colors(post.palette_lock(flat, palette, "luma"))) == 1
+
+
+def test_tonal_span_separates_a_real_frame_from_a_dead_one():
+    assert post.tonal_span(_blue_ramp()) > post.FLAT_FRAME_SPAN
+    assert post.tonal_span(Image.new("RGB", (16, 16), (10, 60, 160))) == 0.0
+
+
+def test_palette_lock_rejects_an_unknown_mode():
+    with pytest.raises(ValueError):
+        post.palette_lock(_noise_image(), post.load_palette("tennis-felt"), "median")
+
+
+def test_compose_passes_the_mode_through():
+    palette = post.load_palette("tennis-felt")
+    source = _blue_ramp()
+    banded = post.compose(source, {"palette": "tennis-felt", "palette_mode": "luma"})
+    assert _png_bytes(banded) == _png_bytes(post.palette_lock(source, palette, "luma"))
+    assert _png_bytes(post.compose(source, {"palette": "tennis-felt"})) == _png_bytes(
+        post.palette_lock(source, palette)
+    )
+
+
 # --- the individual steps --------------------------------------------------
 
 

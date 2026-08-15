@@ -1,0 +1,44 @@
+# tennis — flat riso poster reference over the tennis-felt palette.
+#
+# The reference is FLAT on purpose. A style reference teaches rendering mode,
+# not just colour: a dimensional reference lets the base model fall back to
+# photoreal, whatever the prompt says. See refs/srefs.md.
+
+name = "tennis"
+description = "Flat editorial riso: felt-green court, pink and navy crowd, chartreuse accent."
+
+[generate]
+ref = "refs/style-riso-poster.png"
+strength = 0.08          # usable Redux band is 0.05-0.15
+steps = 4                # schnell; 8 was measured and changes nothing
+
+# The reference alone cannot hold both flatness and a legible subject: at 0.10
+# it holds flatness but the composition collapses on some seeds, and at 0.06
+# the subject is sharp but renders photoreal. Saying "flat" in words carries
+# the rendering mode, which frees the strength down to 0.08 where the subject
+# survives every seed tested. Measured 2026-08-15, 6 seeds per setting.
+prompt_suffix = ", flat editorial illustration, solid blocks of colour, no shading, no gradients, bold simple shapes"
+
+[post]
+palette = "tennis-felt"
+
+# Raw Redux output is NOT flat — it renders smooth vertical ramps in open areas.
+# palette_lock is what makes the look spec true, so it is not optional here.
+#
+# "luma" and not the default "nearest": Redux carries flatness but not hue, so
+# a generated frame sits nowhere near this palette and nearest-colour collapses
+# the whole crowd onto one navy field. Banding by lightness keeps the forms.
+palette_mode = "luma"
+
+[post.halftone]
+angle = 15
+cell = 5
+strength = 0.18
+
+[post.misregister]
+px = 2
+
+[post.grain]
+amount = 0.11
+# seed omitted on purpose: it falls back to the run seed, so grain varies
+# across a series but any one image still reproduces byte-for-byte.

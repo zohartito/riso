@@ -11,8 +11,28 @@ Generation box: [`docs/generation-box.md`](docs/generation-box.md).
 
 ```bash
 source .venv/bin/activate      # Python 3.13 here, syntax kept 3.11-safe
+pip install -e .               # puts the `riso` command on PATH
 python -m pytest -q
 ```
+
+`python -m riso` works identically if you would rather not install.
+
+## Generate
+
+```bash
+riso gen "a crowd of tennis spectators seen from behind" --style tennis --ar 3:4
+```
+
+One command: ComfyUI generation → riso post-pass → a finished PNG in `out/`,
+next to a JSON sidecar recording the prompt, seed, model, adapter and post
+settings that made it. `--seed` to reproduce, `--keep-raw` to also write the
+pre-post-pass frame, `riso styles` to list presets.
+
+A style preset in `styles/*.toml` is the unit of series consistency — reference
+image, strength, palette and post settings in one file. Two runs naming the
+same style differ in subject and seed and nothing else.
+
+`docs/phase3-contact-sheet.png` is three subjects through one preset.
 
 ## Post-pass
 
@@ -22,6 +42,7 @@ from riso import post
 
 art = post.compose(Image.open("in.png"), {
     "palette": "tennis-felt",                              # palettes/*.json
+    "palette_mode": "luma",                                # or "nearest"
     "halftone": {"angle": 15, "cell": 5, "strength": 0.18},
     "misregister": {"px": 2},
     "grain": {"amount": 0.11, "seed": 7},                  # 2px tooth by default
@@ -32,6 +53,13 @@ art.save("out/art.png")
 Steps run in a fixed order — `palette_lock → halftone → misregister → grain` —
 and each is optional. Same seed in, byte-identical PNG out. Palettes are data:
 add a JSON file to `palettes/` rather than hardcoding colours.
+
+**Two palette mappings, because they fail in opposite directions.** `nearest`
+picks the closest ink in Oklab and is right when the source already lives near
+the palette; on a generated frame, which sits nowhere near it, every pixel can
+land on the same ink and the image collapses to one flat field. `luma` ignores
+source hue and maps lightness bands onto the palette's lightness order, so form
+always survives. Style presets use `luma`.
 
 Generated images go to `out/`, which is gitignored. Style references in `refs/`
 are committed on purpose — they are the style identity.
@@ -52,10 +80,17 @@ png = comfy.generate(apply_params(load_workflow(),
                                   style_ref=ref, seed=4242))
 ```
 
-**Redux's usable strength band is 0.05–0.15, not the 0.0–10.0 the node
-advertises.** At the node's own 1.0 default it reproduces the reference and
-ignores the prompt entirely. The workflow ships at 0.10. Measurements and the
-reference ledger are in [`refs/srefs.md`](refs/srefs.md).
+Two rules, both measured, both in [`refs/srefs.md`](refs/srefs.md) with the runs
+behind them:
+
+- **The usable strength band is 0.05–0.15, not the 0.0–10.0 the node
+  advertises.** At the node's own 1.0 default it reproduces the reference and
+  ignores the prompt entirely. The workflow ships at 0.10; `tennis` runs 0.08.
+- **A reference teaches rendering mode, so only ever use flat references.** A
+  dimensional reference lets the base model fall back to photoreal no matter
+  what the prompt says. The reference does not carry the palette — that comes
+  from the post-pass — and its output is not literally flat either, which is
+  why `palette_lock` is not optional.
 
 ## Models and licensing
 

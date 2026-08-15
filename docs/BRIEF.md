@@ -124,6 +124,20 @@ iteration fast, and Apache-2.0 removes the non-commercial problem entirely.
 
 If (b) fails, the pipeline has no value. Say so rather than shipping it.
 
+**Both proofs passed. Three corrections came out of reading them closely**
+(2026-08-15, confirmed on both machines — the full record is in `refs/srefs.md`):
+
+1. **A reference teaches rendering mode, not just style.** In proof (a) the
+   stained-glass output is a photograph; the flat poster ref produced flat art.
+   Only ever use FLAT style references. As load-bearing as the strength band.
+2. **Raw Redux output does not meet the look spec.** Both proof (b) skies are
+   smooth vertical ramps, and the spec allows zero gradients except grain. So
+   `palette_lock` is load-bearing, not cosmetic.
+3. **The reference palette does not transfer.** The ref is teal/lilac/mauve/
+   cream; the outputs are blue and violet. Not one reference colour survived.
+   Stop describing Redux output as carrying the palette — it carries "cool,
+   few colours". Palette comes from `palettes/*.json` in the post-pass.
+
 ### Phase 3 — CLI
 
 ```
@@ -134,7 +148,46 @@ Chains Phase 2 → Phase 1 → writes a PNG. Style presets (ref image + palette 
 settings) live in `styles/*.toml`, read with stdlib `tomllib`. Output to `out/`
 (gitignored).
 
-**Gate:** one command, from cold, produces a finished image.
+**Gate (tightened 2026-08-15, replacing "one command produces a finished
+image"):** that command, from cold, produces one finished PNG — *and* three
+different subjects run through the same preset land in one contact sheet in
+`docs/`. The sheet is the deliverable: it is the first time both halves of this
+repo are visible in one image, and it either reads as a coherent series or the
+repo does not work yet.
+
+**Passed.** `docs/phase3-contact-sheet.png`, three subjects, `tennis` preset,
+seeds 8 / 55 / 21. Measured against the look spec rather than eyeballed:
+
+| spec bullet | measurement |
+|---|---|
+| zero gradients except grain | flat areas vary by sd 2.07 levels; grain alone predicts 2.0. The ramp is gone. |
+| 2px tooth | pixel differences inside a grain block 5–6, across a block boundary 21 |
+| 1–2px channel misregistration | R-to-B offset 4px, i.e. ±2px per plate |
+| no outlines | nothing in the chain draws one; forms read by colour adjacency and press fringe |
+| 3–5 flat colours | 5 inks locked, then modulated by grain and halftone as the spec allows |
+
+**Three findings the sheet also produced — Phase 4 material, not shipped:**
+
+- **Subject fidelity falls off as the subject gets sparser.** The crowd panel
+  is specific; the serve panel reads as "a figure with a racket"; the handshake
+  panel does not read as two players at all. Dense subjects hold, sparse
+  multi-figure interactions do not.
+- **Composition bleeds from the reference.** The cream negative space and the
+  navy block with a circle in panels 2 and 3 are the poster ref's composition,
+  not the prompt's. At 0.08 that bleed is the price of flatness.
+- **Chartreuse is nearly absent.** Equal-interval lightness bands over a
+  bimodal histogram (dark figures, light ground) leave the middle bands empty,
+  so the fifth ink shows only at edges. Within spec, but the palette is not
+  fully exercised.
+
+**Two failure modes worth knowing before Phase 4:**
+
+- schnell returns a genuinely empty frame on some seed/subject pairs (2 of 15
+  measured). `riso gen` now warns and names the seed instead of dressing up a
+  dead frame; re-run with another seed.
+- `palette_lock`'s default nearest-colour mapping collapses a generated frame
+  onto one ink, because Redux output sits nowhere near any palette. Style
+  presets set `palette_mode = "luma"`, which bands by lightness instead.
 
 ---
 

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "riso"
+version = "0.3.0"
+description = "Style-locked flat-illustration pipeline: prompt + style ref -> riso post-pass -> PNG"
+requires-python = ">=3.11"
+dependencies = ["numpy", "pillow", "requests"]
+
+[project.scripts]
+riso = "riso.cli:main"
+
+[tool.setuptools]
+packages = ["riso"]
