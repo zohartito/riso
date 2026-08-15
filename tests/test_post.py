@@ -139,6 +139,43 @@ def test_luma_mode_never_invents_a_color():
     assert _unique_colors(locked) <= set(palette)
 
 
+def _bimodal_frame() -> Image.Image:
+    """Dark figures on a light ground and nothing between — a generated frame.
+
+    Equal-width bands leave the middle inks unused on this; quantile bands
+    cannot, because every band holds the same number of pixels.
+    """
+    arr = np.full((80, 80, 3), 235, dtype=np.uint8)
+    arr[40:, :, :] = 30
+    arr[10:20, 10:70] = 240  # a second light plate, slightly off the ground
+    arr[60:70, 10:70] = 25  # and a second dark one
+    return Image.fromarray(arr, mode="RGB")
+
+
+def test_luma_mode_keeps_a_near_flat_plate_whole():
+    """The regression that killed quantile banding.
+
+    A generated plate is never *exactly* flat — it carries a level or two of
+    sampling wobble. Bands cut by pixel population split that wobble between
+    two inks and the plate comes out mottled. Bands cut by lightness width do
+    not, and a plate that covers most of the frame must survive intact.
+    """
+    palette = post.load_palette("tennis-felt")
+    rng = np.random.default_rng(0)
+    arr = np.full((90, 90, 3), 210, dtype=np.uint8)
+    arr[:70] += rng.integers(0, 2, size=(70, 90, 1), dtype=np.uint8)  # the wobble
+    arr[70:] = 30  # dark figures, so the frame has real structure too
+
+    locked = np.asarray(post.palette_lock(Image.fromarray(arr, "RGB"), palette, "luma"))
+    assert len(_unique_colors(Image.fromarray(locked[:70]))) == 1
+
+
+def test_luma_mode_still_separates_the_plates_it_is_given():
+    palette = post.load_palette("tennis-felt")
+    locked = post.palette_lock(_bimodal_frame(), palette, "luma")
+    assert 2 <= len(_unique_colors(locked)) <= len(_unique_colors(_bimodal_frame()))
+
+
 def test_luma_mode_lays_one_ink_on_a_featureless_frame():
     """A dead generation must stay dead, not become speckle."""
     palette = post.load_palette("tennis-felt")

@@ -16,7 +16,9 @@ they are the style identity, not scratch files.
 
 | file | look | used by style preset |
 |---|---|---|
-| `style-riso-poster.png` | Flat two-ink screenprint poster: teal/lilac blocks, cream ground, one circle. No outlines, no depth. | `tennis` |
+| `style-flat-mosaic.png` | Dense interlocking flat regions, map-like, muted red/green/orange. No objects, no lettering, no shadows. Thin borders between regions. | `tennis` |
+| `style-flat-planes.png` | Four large flat planes, cream/coral/yellow, soft curved boundaries. No objects, no borders, no shadows. | — (outline-free alternative, see the trade below) |
+| `style-riso-poster.png` | Flat two-ink screenprint poster: teal/lilac blocks, cream ground, **one circle**. | — (retired 2026-08-15: the circle reproduced into output) |
 | `style-stained-glass.png` | Art nouveau stained glass: heavy black leading, jewel tones, dense botanical pattern, backlit. Deliberately the opposite of the poster. | — (Phase 2 proof ref; **never** use as a live ref, see below) |
 
 Both were generated locally on 2026-08-15 with `flux1-schnell-fp8` (Apache-2.0)
@@ -80,9 +82,60 @@ subject to survive. That is what `prompt_suffix` in a style preset is for.
 
 Steps were swept too: 8 steps looks identical to 4 on schnell. Stay at 4.
 
-Keep captions and lettering out of a reference image. The first poster ref was
-generated with a caption band and Redux dutifully reproduced garbled text
-("Terk, 2008") into every output; the band was cropped off before the proofs.
+## What a reference contributes, in the order it was learned
+
+Every rule here cost a round of generation. Read this before minting a ref.
+
+**1. Lettering.** The first poster ref carried a caption band and Redux
+reproduced garbled text ("Terk, 2008") into every output. Cropped off.
+
+**2. Any distinctive object, not just lettering.** The poster ref's single
+white circle reappeared verbatim in Phase 3 output — a specific object, moved
+across. Generalise: a reference contributes anything memorable in it. A good
+ref is texture, palette and edge quality with **no memorable element**.
+
+**3. Density transfers.** Measured over 10 seeds on one dense subject: a dense
+reference (many small regions) produced crowds that fill the frame; a
+four-plane reference produced the same subject compressed into a band with
+most of the frame empty. The share of the frame taken by the single biggest
+ink was identical at 59% for all three references tested — so density changes
+what fills the frame, not how much of it is filled.
+
+**4. Edge quality transfers, including borders.** `style-flat-mosaic.png` has
+thin borders between its regions, and its output draws **thin dark outlines
+around figures** — measured, not eyeballed: the darkest ink is 55.7% solid
+under a 2px erosion in the Phase 4 crowd panel against 89–95% in every Phase 3
+panel, i.e. the dark ink went from solid masses to line work. **This violates
+the "no outlines" bullet in the look spec.** `style-flat-planes.png` has no
+borders and does not do it — and produces weaker, emptier compositions. That
+trade is unresolved and is a decision for Zohar, not for this file: switching
+is one line in `styles/tennis.toml`.
+
+**5. A sparse subject renders as the reference, whatever the reference is.**
+"A tennis player mid-serve seen from the baseline" was run against four
+different references and produced no subject at all in every case — the poster
+ref's blocks, the planes ref's planes, the mosaic ref's regions, and with a
+patchwork-of-squares ref a literal checkerboard. This is the strongest form of
+the density rule below: it is not that sparse subjects render weakly, it is
+that Redux fills unspecified space with the reference. A dense subject
+suppresses the reference's motif; a sparse one hands the frame to it.
+
+Consequence: a ref that is safe on dense subjects can still be unusable. The
+patchwork-of-squares ref scored 10/10 legible crowds and was still rejected,
+because the two sparse subjects came back as checkerboard. **Judge a candidate
+reference on at least one dense and one sparse subject.**
+
+## Hit rate (measured 2026-08-15, the number to quote)
+
+Ten consecutive seeds, 1–10, one dense subject ("a crowd of tennis spectators
+seen from behind"), shipped preset, no seed hunting:
+
+- **0 of 10 dead frames**, and **10 of 10 legible crowds** on the mosaic ref.
+- Ink coverage: 5 of 5 inks above 1% of the frame in 7 of 10.
+
+That is the honest quality of this pipeline **on a dense subject**. It does not
+generalise: the same measurement on a sparse subject is close to 0, per rule 5
+above. Pick subjects accordingly.
 
 ### Prompts that minted these refs
 
@@ -92,3 +145,15 @@ generated with a caption band and Redux dutifully reproduced garbled text
 - `style-stained-glass.png` — "ornate art nouveau stained glass window, thick
   black leading between every pane, saturated jewel tones, decorative botanical
   pattern, backlit glow" (seed 901)
+- `style-flat-mosaic.png` — "dense interlocking flat colour regions like a map,
+  filling the sheet edge to edge, even distribution, flat matte ink printed
+  directly on paper, no shadows, no depth, no highlights, no objects, no
+  symbols, no lettering, uniform screenprint grain" (seed 33)
+- `style-flat-planes.png` — "risograph poster background, broad flat colour
+  areas of unequal size meeting at soft irregular edges" + the same negative
+  clauses (seed 33, cropped to drop faint corner lettering)
+
+Eighteen candidates were minted across four rounds to get two keepers. Most
+were rejected on rule 2: circles, squares, grids, dots, torn-paper shadows.
+Dense and object-free pull against each other — density wants many repeated
+marks, and repeated marks are objects.

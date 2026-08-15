@@ -142,7 +142,7 @@ def test_gen_writes_a_finished_png_and_a_sidecar(tmp_path, monkeypatch):
     assert record["model"] == "flux1-schnell-fp8.safetensors"
     assert record["post"]["grain"]["seed"] == 4242
     assert "Non-Commercial" in record["licence"]
-    assert record["style_ref"] == "refs/style-riso-poster.png"  # portable across machines
+    assert record["style_ref"] == "refs/style-flat-mosaic.png"  # portable across machines
 
 
 def test_gen_patches_the_workflow_from_the_preset(tmp_path, monkeypatch):
@@ -153,7 +153,7 @@ def test_gen_patches_the_workflow_from_the_preset(tmp_path, monkeypatch):
     sent = workflow["positive"]["inputs"]["text"]
     assert sent.startswith("a lighthouse")
     assert "no gradients" in sent  # the preset's flatness clause rides along
-    assert workflow["style_ref"]["inputs"]["image"] == "uploaded-style-riso-poster.png"
+    assert workflow["style_ref"]["inputs"]["image"] == "uploaded-style-flat-mosaic.png"
     assert workflow["style_apply"]["inputs"]["strength"] == 0.08
     assert workflow["sampler"]["inputs"]["seed"] == 7
     width, height = cli.dimensions((3, 4))

@@ -177,8 +177,20 @@ FLAT_FRAME_SPAN = 0.02
 def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
     """Index of the swatch whose lightness rank matches each pixel's band.
 
-    A separation, not a colour match: the image is cut into as many equal
-    lightness bands as there are inks, and the inks are laid on darkest-first.
+    A separation, not a colour match: the frame is cut into as many lightness
+    bands as there are inks, and the inks are laid on darkest-first.
+
+    Bands are equal width in lightness, clipped to the 2nd–98th percentile so
+    one stray specular pixel cannot stretch the range and shift every band —
+    two images in a series have to separate the same way to read as a series.
+
+    Cutting the bands at **quantiles** instead, so every ink gets an equal
+    share of pixels, was built and measured on 10 frames and rejected: it
+    raised ink coverage from 4.5 to 4.7 inks per frame and broke the plates up
+    5× more (2.2% → 11.0% of adjacent pixels landing on different inks). A
+    near-flat area is not perfectly flat, and equalising population shreds it
+    into two-ink mottle. Flat plates are the look; an unused ink is not worth
+    losing them for.
     """
     lightness = _oklab_lightness(arr)
     swatch_lightness = _srgb_to_oklab(np.asarray(colors, dtype=np.float32) / 255.0)[
@@ -186,19 +198,15 @@ def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
     ]
     ranked = np.argsort(swatch_lightness, kind="stable")
 
-    # Clipped to the 2nd–98th percentile: one stray specular pixel would
-    # otherwise stretch the range and shift every band, and two images in a
-    # series have to separate the same way to read as a series.
     low, high = np.percentile(lightness, (2.0, 98.0))
-    span = float(high) - float(low)
-
-    if span < FLAT_FRAME_SPAN:
+    if float(high) - float(low) < FLAT_FRAME_SPAN:
         # Nothing to separate. Lay a single ink rather than amplifying noise,
         # so a dead frame still looks dead.
         nearest = int(np.argmin(np.abs(swatch_lightness - float(lightness.mean()))))
         return np.full(lightness.shape, nearest, dtype=np.intp)
 
     bands = len(colors)
+    span = float(high) - float(low)
     band = np.clip(
         np.floor((lightness - float(low)) / span * bands).astype(np.intp), 0, bands - 1
     )

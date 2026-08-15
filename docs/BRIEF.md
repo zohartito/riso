@@ -191,6 +191,58 @@ seeds 8 / 55 / 21. Measured against the look spec rather than eyeballed:
 
 ---
 
+### Phase 4 — what the contact sheet taught
+
+Scope was four items, set after reading the Phase 3 sheet. Result:
+`docs/phase4-contact-sheet.png`, same three subjects, **seed 1 for all three,
+no seed hunting**, so it is comparable to `docs/phase3-contact-sheet.png`.
+
+**a) Quantile banding — built, measured, rejected.** Cutting the luma bands by
+pixel population instead of lightness width was meant to recover the fifth ink.
+Over 10 frames it raised coverage from 4.5 to 4.7 inks and broke the plates up
+5× (2.2% → 11.0% of adjacent pixels landing on different inks): a near-flat
+area is not perfectly flat, and equalising population shreds it into two-ink
+mottle. Flat plates are the look. `luma` stays equal-width, and the reasoning
+is in the docstring so nobody re-tries it blind.
+
+**b) New object-free reference — done.** `style-flat-mosaic.png` replaces the
+poster ref. The white circle is gone. Two new rules came out of minting it, both
+in `refs/srefs.md`: a reference contributes any distinctive *object*, and — the
+one that matters more — **a sparse subject renders as the reference, whatever
+the reference is.** Four different refs, same sparse prompt, no subject in any
+of them.
+
+**c) Hit rate: 0 dead and 10 legible crowds out of 10 unhunted seeds** on a
+dense subject. Five inks above 1% of frame in 7 of 10. On a sparse subject the
+same measurement is close to zero.
+
+**d) The sheet.** Panel 1 (crowd) is the best image this repo has made. Panel 3
+(handshake) now reads as two hands, which it did not in Phase 3. Panel 2
+(mid-serve) has no subject at all.
+
+**What the sheet still gets wrong — read before Phase 5:**
+
+- **The mosaic ref draws outlines, and the look spec forbids them.** Its thin
+  region borders transfer: the darkest ink is 55.7% solid under a 2px erosion
+  in the Phase 4 crowd panel, against 89–95% in every Phase 3 panel — solid
+  masses became line work. `style-flat-planes.png` is committed as the
+  outline-free alternative and is one line away in `styles/tennis.toml`; it
+  produces emptier, weaker compositions. **This trade is Zohar's call.**
+- Panel 2 is a failure, and picking a different seed would not fix it.
+
+### Subject selection is part of the style
+
+Phase 4's clearest finding, and it belongs with the look spec rather than in a
+phase note. **This aesthetic needs dense subjects.** Flat colour adjacency has
+to describe form without outlines or shading, and it needs repeated elements to
+do that — a crowd of caps, a field of waves, a bank of faces. That is what the
+reference material (Ege Berkina, Gizem Akdag) is made of.
+
+A lone figure on an empty court gives the pipeline nothing to work with, and
+the empty space does not stay empty: Redux fills it with the reference. Choose
+subjects that fill the frame with repeated elements. This is a property of the
+aesthetic, not a defect to be fixed.
+
 ## Deferred — do not build these now
 
 SDXL + IP-Adapter, style LoRA training, an MCP server, a web UI, Docker, a job queue,

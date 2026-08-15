@@ -32,7 +32,17 @@ A style preset in `styles/*.toml` is the unit of series consistency — referenc
 image, strength, palette and post settings in one file. Two runs naming the
 same style differ in subject and seed and nothing else.
 
-`docs/phase3-contact-sheet.png` is three subjects through one preset.
+`docs/phase4-contact-sheet.png` is three subjects through one preset, on the
+first seed for each, no hunting. `docs/phase3-contact-sheet.png` is the
+previous generation of the same three, for comparison.
+
+**Hit rate, so you know what to expect: 10 of 10 unhunted seeds produced a
+usable image on a dense subject** (a crowd), 0 of them dead. On a sparse
+subject — one figure on an empty court — it is close to 0, and no seed fixes
+it. **This aesthetic needs dense subjects**: flat colour adjacency describes
+form without outlines or shading, so it needs repeated elements to describe.
+Empty space does not stay empty either; the style reference fills it. See
+[`docs/BRIEF.md`](docs/BRIEF.md).
 
 ## Post-pass
 

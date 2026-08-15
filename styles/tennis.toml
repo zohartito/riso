@@ -1,14 +1,22 @@
-# tennis — flat riso poster reference over the tennis-felt palette.
+# tennis — dense flat reference over the tennis-felt palette.
 #
 # The reference is FLAT on purpose. A style reference teaches rendering mode,
 # not just colour: a dimensional reference lets the base model fall back to
 # photoreal, whatever the prompt says. See refs/srefs.md.
+#
+# It is also DENSE on purpose, and object-free: density fills the frame, and
+# anything memorable in a reference gets copied into the output.
+#
+# Known cost of this particular ref: its thin region borders transfer as thin
+# outlines around figures, which the look spec forbids. refs/style-flat-planes
+# .png does not do that and gives emptier compositions — swap the line below
+# to trade one for the other. Measured both ways in docs/BRIEF.md.
 
 name = "tennis"
 description = "Flat editorial riso: felt-green court, pink and navy crowd, chartreuse accent."
 
 [generate]
-ref = "refs/style-riso-poster.png"
+ref = "refs/style-flat-mosaic.png"
 strength = 0.08          # usable Redux band is 0.05-0.15
 steps = 4                # schnell; 8 was measured and changes nothing
 
