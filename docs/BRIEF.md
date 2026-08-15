@@ -52,7 +52,10 @@ one-off pretty images are not the deliverable.**
 ## What the look is (mechanical spec — verify output against this)
 
 - 3–5 flat colors, zero gradients except grain
-- uniform heavy grain across the full frame (screenprint, not photo noise)
+- uniform heavy grain across the full frame (screenprint, not photo noise) —
+  **2px tooth** at ~1024px (`grain(scale=2)`, the default). Per-pixel grain
+  reads as sensor noise, which is the thing this bullet rules out; the earlier
+  wording implied per-pixel and contradicted itself. Corrected 2026-08-15.
 - no outlines; forms read by color adjacency only
 - 1–2px RGB channel misregistration
 - optional halftone on a duplicated luminance channel
@@ -63,6 +66,9 @@ one-off pretty images are not the deliverable.**
   WSL at `~/code/comfyui` and `~/comfy/ComfyUI`
 - ComfyUI on the Mac: `~/comfyui-mac`
 - Weights already pulled: `flux-krea-dev`, `flux1-schnell-fp8`, `flux_text_encoders`
+  — **that list describes the Mac, not the PC.** Corrected 2026-08-15 after
+  querying `/object_info` on the PC box, which has `flux1-schnell-fp8` and
+  nothing else. Do not pull krea-dev onto the PC.
 - `~/projects/comfyui-ltx25` is a ComfyUI **fork** for video. Leave it alone.
 
 ---
@@ -104,6 +110,12 @@ Zohar before/after so he can judge it by eye.
 Flux Redux is the local equivalent of Midjourney `--sref`: it carries style from a
 reference image while the text prompt supplies subject and crop. Download only the
 Redux adapter — the base Flux weights are already on disk.
+
+**Corrected 2026-08-15:** Redux is two files, not one — the adapter
+(`flux1-redux-dev.safetensors`) plus the SigLIP vision encoder it reads the
+reference through (`sigclip_vision_patch14_384.safetensors`). Both approved.
+The base model stays `flux1-schnell-fp8`: Redux supports schnell, 4 steps keep
+iteration fast, and Apache-2.0 removes the non-commercial problem entirely.
 
 **Gate:** two proofs, saved as image pairs in `docs/`:
 

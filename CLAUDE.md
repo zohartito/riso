@@ -8,9 +8,11 @@ Full spec and phase gates: `docs/BRIEF.md`.
 
 ## Environment
 
-- Python 3.11 (pyenv), venv at `.venv`. Activate: `source .venv/bin/activate`
+- Python **3.13.13** in the PC/WSL venv at `.venv` (an earlier note here said
+  3.11 — wrong). Activate: `source .venv/bin/activate`. Keep syntax 3.11-safe:
+  the Mac venv has not been checked from this box.
 - Deps: numpy, pillow, requests, pytest. Justify anything else before adding it.
-- `tomllib` is stdlib in 3.11 — do not add a TOML dependency.
+- `tomllib` is stdlib from 3.11 on — do not add a TOML dependency.
 - `argparse` is stdlib — do not add click/typer.
 - Use `pathlib`, not `os.path`. Paths must work on macOS **and** Windows/WSL —
   this repo syncs between both machines via git.
@@ -27,7 +29,11 @@ Full spec and phase gates: `docs/BRIEF.md`.
 
 ## Licensing
 
-Flux dev and Flux Krea-dev are **non-commercial**. Flux schnell is Apache-2.0.
+**`flux1-schnell-fp8` (Apache-2.0) is the pipeline default** — decided
+2026-08-15. It removes the non-commercial problem entirely, and 4 steps keep
+iteration fast. Flux dev and Flux Krea-dev are **non-commercial**; krea-dev is
+not on the PC box and is not to be pulled there.
+
 Output may feed the @zohar_tito account — record which model produced each image.
 
 ## Out of scope
