@@ -116,14 +116,50 @@ is one line in `styles/tennis.toml`.
 different references and produced no subject at all in every case — the poster
 ref's blocks, the planes ref's planes, the mosaic ref's regions, and with a
 patchwork-of-squares ref a literal checkerboard. This is the strongest form of
-the density rule below: it is not that sparse subjects render weakly, it is
-that Redux fills unspecified space with the reference. A dense subject
-suppresses the reference's motif; a sparse one hands the frame to it.
+rule 3: it is not that sparse subjects render weakly, it is that Redux fills
+unspecified space with the reference. A dense subject suppresses the
+reference's motif; a sparse one hands the frame to it.
 
-Consequence: a ref that is safe on dense subjects can still be unusable. The
-patchwork-of-squares ref scored 10/10 legible crowds and was still rejected,
-because the two sparse subjects came back as checkerboard. **Judge a candidate
-reference on at least one dense and one sparse subject.**
+## The acceptance test — no reference ships without it
+
+**Hard rule: a candidate reference is judged on one dense subject and one
+sparse subject before it is allowed into a style preset.** Dense-only testing
+passes references that are unusable, and it will do so confidently.
+
+Run both through the preset you intend to ship, same seed, changing nothing but
+the subject, and look at the two images:
+
+1. **Dense** — a crowd, a bank of faces, a field of repeated elements.
+2. **Sparse** — one figure in open space.
+
+Fail the candidate if the sparse frame shows the reference's own motif, if
+either frame carries outlines (rule 4), or if anything memorable from the
+reference appears in either (rules 1–2).
+
+**The automated check will not catch this.** `riso gen` warns on a featureless
+frame, but the sparse failure below scores a tonal span of 0.326 — far above
+the 0.02 threshold — because a checkerboard is full of contrast. It is a
+perfectly healthy frame containing none of the subject. Only looking finds it.
+
+### Worked example — the patchwork candidate, rejected
+
+![reference, dense subject, sparse subject](../docs/ref-test-patchwork.png)
+
+Left, the candidate: dense flat squares, no lettering, no shadows, no borders,
+no single memorable object. It looked like the best ref yet on every rule above.
+
+Middle, the dense subject at seed 1: the strongest crowd this pipeline has
+produced. **10 of 10 unhunted seeds legible.** On a dense-only test this
+reference ships.
+
+Right, the sparse subject — same reference, same seed, same preset, only the
+subject changed: **a checkerboard.** The reference's squares, straight through,
+with no tennis player anywhere in the frame. Rejected on the strength of this
+one image, despite the middle panel.
+
+`style-flat-mosaic.png` shipped instead — not because it is clean, but because
+it fails less badly on sparse subjects. It carries its own violation (rule 4,
+outlines), which is recorded there rather than hidden.
 
 ## Hit rate (measured 2026-08-15, the number to quote)
 
@@ -152,6 +188,12 @@ above. Pick subjects accordingly.
 - `style-flat-planes.png` — "risograph poster background, broad flat colour
   areas of unequal size meeting at soft irregular edges" + the same negative
   clauses (seed 33, cropped to drop faint corner lettering)
+
+- rejected patchwork candidate (`docs/ref-test-patchwork.png`, left) —
+  "crowded field of overlapping flat colour patches, busy all-over
+  composition, no focal point, colour adjacency only" + the same negative
+  clauses (seed 5). Not committed to `refs/`: it fails the acceptance test, and
+  the prompt plus seed reproduces it if anyone wants to re-run the comparison.
 
 Eighteen candidates were minted across four rounds to get two keepers. Most
 were rejected on rule 2: circles, squares, grids, dots, torn-paper shadows.
