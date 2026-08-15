@@ -1,0 +1,12 @@
+{
+  "name": "tennis-felt",
+  "source": "reference: @egeberkina tennis series (X, Aug 2026)",
+  "notes": "Flocked/felt surface quality. Pink and navy carry the crowd, chartreuse is reserved for grid and string detail.",
+  "colors": [
+    "#E9A7B8",
+    "#2A3D8F",
+    "#CFE04B",
+    "#1C4430",
+    "#EDE7D6"
+  ]
+}
