@@ -20,6 +20,15 @@ ref = "refs/style-flat-mosaic.png"
 strength = 0.08          # usable Redux band is 0.05-0.15
 steps = 4                # schnell; 8 was measured and changes nothing
 
+# Deliver the densest 71% of the frame, rescaled back to full size. Whatever
+# the subject does not fill, Redux fills with the reference, so the frame
+# always has margin worth discarding.
+#
+# Generating LARGER and cropping back was tried first and is worse: at 1.15x
+# and 1.35x Flux draws fewer, bigger figures, so the crowd stops being a crowd.
+# Native size plus this crop keeps the density. Measured 2026-08-15.
+crop_keep = 0.71
+
 # The reference alone cannot hold both flatness and a legible subject: at 0.10
 # it holds flatness but the composition collapses on some seeds, and at 0.06
 # the subject is sharp but renders photoreal. Saying "flat" in words carries

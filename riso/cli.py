@@ -108,6 +108,10 @@ def generate(
     if seed is None:
         seed = random.randrange(2**31)
 
+    keep = float(settings.get("crop_keep", 1.0))
+    if not 0.0 < keep <= 1.0:
+        raise ValueError(f"crop_keep must be in (0, 1], got {keep}")
+
     low, high = STRENGTH_BAND
     if not low <= settings["strength"] <= high:
         print(
@@ -160,7 +164,22 @@ def generate(
                 file=sys.stderr,
             )
 
-        art = post.compose(raw, preset)
+        framed = raw
+        if keep < 1.0:
+            palette = preset.get("palette")
+            if palette is None:
+                raise ValueError("crop_keep needs a [post] palette to find the subject")
+            colors = post.load_palette(palette) if isinstance(palette, str) else palette
+
+            # Crop to the subject, then scale back to the size that was asked
+            # for. The upscale costs nothing visible because palette_lock
+            # re-quantises to flat plates afterwards, and grain lands at the
+            # delivered size, so the 2px tooth stays 2px.
+            framed = post.content_crop(
+                raw, colors, (round(width * keep), round(height * keep))
+            ).resize((width, height), Image.LANCZOS)
+
+        art = post.compose(framed, preset)
 
         if out is None:
             out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}.png"
@@ -187,6 +206,7 @@ def generate(
                 "seed": seed,
                 "steps": settings.get("steps"),
                 "size": [width, height],
+                "crop_keep": keep,
                 "post": preset,
             },
             indent=2,

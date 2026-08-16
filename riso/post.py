@@ -11,6 +11,10 @@ Quantise first so forms read by colour adjacency; screen and misregister the
 flat plates the way a press would; grain last so it sits on top of everything,
 uniform across the full frame.
 
+`content_crop` sits outside that chain, and before it: the CLI generates a
+frame larger than it ships and crops to the delivered size, so grain tooth and
+halftone pitch stay true to the pixels that survive.
+
 Note that `halftone` and `grain` intentionally introduce colours outside the
 palette — that is ink overlay and paper texture, not a bug. `palette_lock` on
 its own is the step that holds the image to the palette and nothing else.
@@ -211,6 +215,74 @@ def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
         np.floor((lightness - float(low)) / span * bands).astype(np.intp), 0, bands - 1
     )
     return ranked[band]
+
+
+def detail_map(img: Image.Image, palette: Palette, tile: int = 32) -> np.ndarray:
+    """Per-tile density of ink boundaries — where the *subject* is.
+
+    A crowd is hundreds of small regions and scores high. A torn-paper plane,
+    a sky, or any large flat shape scores near zero however colourful it is.
+    That distinction is the one that matters here, because the failure being
+    measured is a frame half-filled with handsome abstraction.
+    """
+    plates = np.asarray(palette_lock(img, palette, "luma"), dtype=np.int32)
+    key = plates[..., 0] * 65536 + plates[..., 1] * 256 + plates[..., 2]
+
+    edges = np.zeros(key.shape, dtype=np.float32)
+    edges[:, :-1] += key[:, :-1] != key[:, 1:]
+    edges[:-1, :] += key[:-1, :] != key[1:, :]
+
+    height = key.shape[0] // tile * tile
+    width = key.shape[1] // tile * tile
+    return edges[:height, :width].reshape(
+        height // tile, tile, width // tile, tile
+    ).mean(axis=(1, 3))
+
+
+def content_crop(
+    img: Image.Image, palette: Palette, size: Tuple[int, int], tile: int = 32
+) -> Image.Image:
+    """Take the window of exactly ``size`` holding the most subject.
+
+    The frame is generated larger than it ships and this chooses which part
+    ships: slide a target-sized window, keep the placement with the most ink
+    boundaries in it. Cropping rather than re-prompting is the cheap lever —
+    the subject Flux drew is usually good, it is just sharing the frame with a
+    lot of style reference, and the reference always loses this competition
+    because large flat shapes carry no boundaries.
+
+    Exact output size in, exact output size out: ``--ar 3:4`` still delivers
+    3:4 at full resolution, not whatever shape the subject happened to take.
+    """
+    target_w, target_h = int(size[0]), int(size[1])
+    if target_w <= 0 or target_h <= 0:
+        raise ValueError(f"crop size must be positive, got {size}")
+    if img.width <= target_w or img.height <= target_h:
+        return img.copy()
+
+    density = detail_map(img, palette, tile)
+    if density.size == 0 or density.sum() <= 0:
+        return img.copy()
+
+    window_h = max(1, target_h // tile)
+    window_w = max(1, target_w // tile)
+    integral = np.pad(density.cumsum(0).cumsum(1), ((1, 0), (1, 0)))
+
+    best_score, best_yx = -1.0, (0, 0)
+    for y in range(density.shape[0] - window_h + 1):
+        for x in range(density.shape[1] - window_w + 1):
+            score = (
+                integral[y + window_h, x + window_w]
+                - integral[y, x + window_w]
+                - integral[y + window_h, x]
+                + integral[y, x]
+            )
+            if score > best_score:
+                best_score, best_yx = float(score), (y, x)
+
+    top = min(best_yx[0] * tile, img.height - target_h)
+    left = min(best_yx[1] * tile, img.width - target_w)
+    return img.crop((left, top, left + target_w, top + target_h))
 
 
 def palette_lock(

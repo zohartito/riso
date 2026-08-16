@@ -280,6 +280,28 @@ Three things learned that generalise past this repo:
   wording draws smaller figures packed denser; the illustration wording drew
   larger, crisper ones. The spec decides it, but Zohar can overrule on sight.
 
+### Phase 5c — crop, which is what makes the emptiness survivable
+
+`docs/phase5-cropped-sheet.png` against `docs/phase5-outline-fix-sheet.png`:
+same three subjects, same seed, one setting added.
+
+`crop_keep = 0.71` in the preset means *deliver the densest 71% of the frame,
+rescaled back to full size*. `post.content_crop` slides a target-sized window
+and keeps the placement holding the most ink boundaries — large flat shapes
+carry none, so the style reference always loses that competition to the
+subject. The upscale afterwards costs nothing visible because `palette_lock`
+re-quantises to flat plates, and grain lands at the delivered size, so the 2px
+tooth stays 2px. `--ar 3:4` still delivers 3:4 at full resolution.
+
+Subject share on the crowd goes 44.8% → 61.1%. Panels 1 and 3 are clearly
+better; panel 2 is unchanged in kind, because a frame with no subject in it has
+nothing to crop to.
+
+**Generating larger and cropping back was tried first and is worse.** At 1.15×
+and 1.35× Flux draws fewer, bigger figures, so a crowd stops being a crowd:
+whole-frame subject share fell from 48.9% at native size to 37.9% and 27.6%.
+Resolution bought that way costs the density that makes the look work.
+
 ### Subject selection is part of the style
 
 Phase 4's clearest finding, and it belongs with the look spec rather than in a

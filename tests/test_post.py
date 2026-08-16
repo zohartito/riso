@@ -364,3 +364,49 @@ def test_compose_accepts_an_inline_palette():
 def test_compose_rejects_a_typo_in_the_preset():
     with pytest.raises(ValueError, match="unknown preset keys"):
         post.compose(_noise_image(), {"pallette": "tennis-felt"})
+
+
+# --- content_crop: pick the window with the subject in it -------------------
+
+
+def _subject_in_corner() -> Image.Image:
+    """A busy patch in one corner of an otherwise flat frame."""
+    rng = np.random.default_rng(4)
+    arr = np.full((400, 400, 3), 230, dtype=np.uint8)
+    arr[:120, :120] = rng.integers(0, 255, size=(120, 120, 3), dtype=np.uint8)
+    return Image.fromarray(arr, mode="RGB")
+
+
+def test_content_crop_finds_the_subject():
+    palette = post.load_palette("tennis-felt")
+    cropped = post.content_crop(_subject_in_corner(), palette, (160, 160))
+    assert cropped.size == (160, 160)
+    # the busy corner is the top-left, so the crop must sit there
+    detail = post.detail_map(cropped, palette)
+    assert detail.mean() > post.detail_map(_subject_in_corner(), palette).mean()
+
+
+def test_content_crop_returns_the_requested_size_exactly():
+    palette = post.load_palette("tennis-felt")
+    for size in [(160, 160), (96, 300), (399, 128)]:
+        assert post.content_crop(_subject_in_corner(), palette, size).size == size
+
+
+def test_content_crop_is_a_no_op_when_the_target_is_not_smaller():
+    palette = post.load_palette("tennis-felt")
+    source = _subject_in_corner()
+    assert post.content_crop(source, palette, (400, 400)).size == (400, 400)
+    assert post.content_crop(source, palette, (500, 500)).size == (400, 400)
+
+
+def test_content_crop_rejects_a_nonsense_size():
+    palette = post.load_palette("tennis-felt")
+    with pytest.raises(ValueError):
+        post.content_crop(_subject_in_corner(), palette, (0, 100))
+
+
+def test_detail_map_separates_a_crowd_from_a_flat_plane():
+    palette = post.load_palette("tennis-felt")
+    flat = Image.new("RGB", (256, 256), (200, 90, 70))
+    assert post.detail_map(flat, palette).mean() < 0.01
+    assert post.detail_map(_subject_in_corner(), palette).mean() > 0.01

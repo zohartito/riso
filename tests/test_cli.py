@@ -133,7 +133,9 @@ def test_gen_writes_a_finished_png_and_a_sidecar(tmp_path, monkeypatch):
 
     assert written == out and out.is_file()
     with Image.open(out) as art:
-        assert art.size == (64, 64)  # the stub's size; framing is asserted below
+        # cropping to the subject must not change what the caller asked for:
+        # --ar 3:4 delivers 3:4 at full size, whatever the crop threw away
+        assert art.size == cli.dimensions((3, 4))
     assert out.with_name("shot-raw.png").is_file()
 
     record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))

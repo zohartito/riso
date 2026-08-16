@@ -29,20 +29,44 @@ settings that made it. `--seed` to reproduce, `--keep-raw` to also write the
 pre-post-pass frame, `riso styles` to list presets.
 
 A style preset in `styles/*.toml` is the unit of series consistency — reference
-image, strength, palette and post settings in one file. Two runs naming the
-same style differ in subject and seed and nothing else.
+image, strength, prompt wording, palette, crop and post settings in one file.
+Two runs naming the same style differ in subject and seed and nothing else.
 
-`docs/phase4-contact-sheet.png` is three subjects through one preset, on the
-first seed for each, no hunting. `docs/phase3-contact-sheet.png` is the
-previous generation of the same three, for comparison.
+`crop_keep` delivers the densest part of the frame at the size you asked for:
+whatever the subject does not fill, the style reference fills with its own
+shapes, so the crop trades that away. `--ar 3:4` still gives 3:4 at full size.
 
-**Hit rate, so you know what to expect: 10 of 10 unhunted seeds produced a
-usable image on a dense subject** (a crowd), 0 of them dead. On a sparse
-subject — one figure on an empty court — it is close to 0, and no seed fixes
-it. **This aesthetic needs dense subjects**: flat colour adjacency describes
-form without outlines or shading, so it needs repeated elements to describe.
-Empty space does not stay empty either; the style reference fills it. See
-[`docs/BRIEF.md`](docs/BRIEF.md).
+`docs/phase5-cropped-sheet.png` is three subjects through one preset, on the
+first seed for each, no hunting. Earlier sheets are kept beside it as the
+record of how it got there.
+
+## What this pipeline does and does not do
+
+**It renders dense, repeating subjects.** Crowds, banks of faces, fields of
+waves, stands of trees. That is not a limitation to work around, it is what the
+look is made of: flat colour adjacency has to describe form without outlines or
+shading, and it needs repeated elements to describe. The reference work
+(Ege Berkina, Gizem Akdag) is built the same way.
+
+Subjects that work: `a crowd of tennis spectators seen from behind`,
+`rows of striped umbrellas on a beach`, `a stand of pine trees on a hillside`,
+`commuters on a station platform`, `a flock of birds over rooftops`.
+
+**It does not render a lone subject in open space.** One figure on an empty
+court comes back with no figure at all — and not as a blank frame: whatever the
+subject does not fill, the style reference fills with its own shapes. Measured
+against four different references, all four failed the same prompt the same
+way. No seed fixes it.
+
+**Hit rate on a dense subject, ten unhunted seeds, the shipped preset: 8 of 10
+usable, 0 dead, five inks in 9 of 10.** The two weak frames are mostly flat
+planes with a thin band of crowd.
+
+**`riso gen` cannot tell you when the subject is missing.** It warns on a
+featureless frame, but a frame full of confident abstraction is not featureless
+— one such failure measured a tonal span of 0.326 against the 0.02 warning
+threshold. It is a healthy, high-contrast, entirely subject-free image, and the
+tool will report success. Look at what comes out.
 
 ## Post-pass
 

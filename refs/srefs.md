@@ -142,17 +142,38 @@ neutral: it means vector line art, which is outlined by convention. Every crowd
 came back in heavy black contours. Naming a **paper** medium instead removes
 them completely:
 
-| prompt phrase | thin dark lines (mean of 3 seeds) |
-|---|---|
-| flat editorial illustration (was shipped) | 3.64% |
-| + "no outlines, no linework" clause | 3.75% — **negation does nothing** |
-| flat screenprint | 3.13% |
-| flat colour-block poster | 2.57% |
-| flat cut-paper collage | 1.79% |
-| **torn paper collage, matte paper shapes** | **0.31%** — what `tennis` ships |
+Scored on **two** axes, because the first version of this table only measured
+lines and picked a winner that quietly lost ground on framing. *Subject* is the
+share of the frame carrying real detail rather than handsome abstraction.
+
+| prompt phrase | thin dark lines | subject |
+|---|---|---|
+| flat editorial illustration (was shipped) | 3.64% | 42.2% |
+| + "no outlines, no linework" clause | 3.75% | 42.5% |
+| flat screenprint | 3.13% | 39.7% |
+| flat colour-block poster | 2.57% | 38.3% |
+| flat flocked felt appliqué | 3.59% | 62.7% |
+| flat cut-paper collage | 1.79% | 56.1% |
+| cut-paper + "no outlines" clause | 0.94% | 55.1% |
+| **torn paper collage, matte paper shapes** | **0.31%** | 44.8% → **61.1% cropped** |
 
 For scale: a genuinely line-free image measures 0.00–0.04% on the same metric.
-0.31% is the floor, not a partial win.
+0.31% is the floor, not a partial win — and the difference between 0.31% and
+0.94% is visible, not academic. At 0.94% there is still linework on collars and
+shoulders; at 0.31% there is none anywhere.
+
+**The second axis is real and it nearly chose a different winner.** Torn paper
+costs about 10 points of subject share against cut-paper, exactly as suspected:
+ask for a paper medium and the space the subject does not occupy becomes paper.
+It stays shipped because the alternative is visibly outlined, and because
+`crop_keep` recovers the framing it costs — torn paper cropped reads 61.1%
+subject, better than the outlined alternative uncropped.
+
+**Negation works, but only once the medium word stops fighting it.** The "no
+outlines" clause did nothing next to "editorial illustration" (3.64 → 3.75) and
+halved the lines next to "cut-paper collage" (1.79 → 0.94). A negative cannot
+overrule the convention a noun carries; it can only trim what is left after the
+noun already agrees.
 
 **Substitute, do not delete or negate.** Deleting the phrase leaves a gap the
 model fills from the same convention, and a negative clause is ignored outright
