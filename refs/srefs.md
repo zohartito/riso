@@ -169,11 +169,11 @@ It stays shipped because the alternative is visibly outlined, and because
 `crop_keep` recovers the framing it costs — torn paper cropped reads 61.1%
 subject, better than the outlined alternative uncropped.
 
-**Negation works, but only once the medium word stops fighting it.** The "no
-outlines" clause did nothing next to "editorial illustration" (3.64 → 3.75) and
-halved the lines next to "cut-paper collage" (1.79 → 0.94). A negative cannot
-overrule the convention a noun carries; it can only trim what is left after the
-noun already agrees.
+The "no outlines" clause did nothing next to "editorial illustration"
+(3.64 → 3.75) and halved the lines next to "cut-paper collage" (1.79 → 0.94).
+That generalises past this repo and is stated as a law in `docs/BRIEF.md`:
+**a negative cannot overrule the convention a noun carries, only trim what
+survives once the noun agrees.**
 
 **Substitute, do not delete or negate.** Deleting the phrase leaves a gap the
 model fills from the same convention, and a negative clause is ignored outright
@@ -206,10 +206,13 @@ version ships, but the trade is real and visible in that image.
 "A tennis player mid-serve seen from the baseline" was run against four
 different references and produced no subject at all in every case — the poster
 ref's blocks, the planes ref's planes, the mosaic ref's regions, and with a
-patchwork-of-squares ref a literal checkerboard. This is the strongest form of
-rule 3: it is not that sparse subjects render weakly, it is that Redux fills
-unspecified space with the reference. A dense subject suppresses the
+patchwork-of-squares ref a literal checkerboard. A dense subject suppresses the
 reference's motif; a sparse one hands the frame to it.
+
+This is the strongest form of rule 3 and it is not specific to this repo, so it
+is stated as a law in `docs/BRIEF.md`: **whatever the subject does not fill,
+the style reference fills.** The acceptance test below is one of its
+consequences; `crop_keep` is another.
 
 ## The acceptance test — no reference ships without it
 

@@ -60,6 +60,35 @@ one-off pretty images are not the deliverable.**
 - 1–2px RGB channel misregistration
 - optional halftone on a duplicated luminance channel
 
+## Two laws about driving the model — these are not about tennis
+
+Both were paid for in generation time on this repo, and neither is specific to
+it. If you are reading this before touching a prompt or a reference, read these
+two things first. Measurements and workings are in `refs/srefs.md`.
+
+**1. A negative cannot overrule the convention a noun carries. It can only trim
+what survives once the noun agrees.**
+
+The prompt said "flat editorial illustration" and every crowd came back in
+heavy contour lines, because that phrase means vector line art. Adding "no
+outlines, no linework" moved thin-line coverage from 3.64% to 3.75% — nothing.
+Adding the *same clause* to "cut-paper collage" moved it from 1.79% to 0.94%.
+Change the noun first; the negative only tidies up afterwards. Naming a paper
+medium instead of an illustration medium took the same measure to 0.31%.
+
+**2. Whatever the subject does not fill, the style reference fills.**
+
+A sparse subject does not render weakly — it renders *as the reference*. The
+same prompt against four different references produced no subject in all four:
+the poster ref's blocks, the planes ref's planes, the mosaic ref's regions, and
+from a patchwork-of-squares reference a literal checkerboard. Ask for torn
+paper collage and the empty regions become torn paper.
+
+Three consequences, all load-bearing: choose subjects that fill the frame
+(see "Subject selection is part of the style" below); judge a candidate
+reference on one dense **and** one sparse subject, never dense alone; and crop
+to the subject, because the space it does not occupy is never neutral.
+
 ## Existing assets — do not re-clone or re-download
 
 - ComfyUI on the PC (Tailscale host `desktop-zt`, RTX 4070 Ti SUPER 16 GB):
