@@ -46,8 +46,9 @@ host (and therefore not to Tailscale). Diagnose which before reaching for a fix.
 
 Build an original editorial/risograph illustration system, using external work
 only to study generic print mechanics rather than copy palettes, subjects or
-compositions. The repeatable local pipeline has three entry lanes: semantic generation,
-deterministic geometric composition, or imported artwork → riso post-pass → export.
+compositions. The repeatable local pipeline has four entry lanes: semantic generation,
+deterministic geometric composition, imported artwork, or palette-locked SVG from a
+pluggable engine (Phase 10) → riso post-pass → export.
 **Style consistency across a series is the whole point; one-off pretty images are
 not the deliverable.**
 
@@ -93,7 +94,8 @@ to the subject, because the space it does not occupy is never neutral.
 
 ## Existing assets — do not re-clone or re-download
 
-- ComfyUI on the PC (Tailscale host `desktop-zt`, RTX 4070 Ti SUPER 16 GB):
+- ComfyUI on the PC (Tailscale host `desktop-zt`, RTX A6000 48 GB primary plus
+  RTX 4070 Ti SUPER 16 GB since the 2026-08 rebuild):
   WSL at `~/code/comfyui` and `~/comfy/ComfyUI`
 - ComfyUI on the Mac: `~/comfyui-mac`
 - Weights already pulled: `flux-krea-dev`, `flux1-schnell-fp8`, `flux_text_encoders`
@@ -448,6 +450,41 @@ with exact prompts, raw/final hashes, source boundaries, post settings, and a
 review contact sheet recorded in `assets/2026-08-31-field-exceptions/`.
 Creative approval and live preset validation remain open. Current suite:
 **109 passed**.
+
+### Phase 10 — the vector lane
+
+`riso vector` draws a style preset's subject as SVG instead of pixels. The style
+still owns palette and press treatment; only the source of the drawing changes.
+Engines: QuiverAI Arrow 2 / Arrow 2 Telos through Vercel AI Gateway (metered),
+the subscription CLIs panel already drives (claude, codex, gemini, grok, kimi),
+OmniSVG 1.1 open weights run locally (`~/projects/omnisvg`, MPS on the Mac), and
+vtracer on an existing raster. Colour is decided in code: `flatten` removes
+gradients, opacity, filters and embedded rasters, `lock_palette` snaps every
+paint (attributes, inline styles, `<style>` sheets, the unset-black default) to
+the palette, and anything unreadable fails the run instead of passing.
+
+**Build gate passed (2026-09-22):** 158 tests; a Codex (gpt-5.6-sol) review's
+findings — colours escaping the lock, a crash ending a bake-off, a key echoed in
+an error — each fixed and pinned by a test.
+
+First live bake-off, one subject (`blueprint-coral`, 2:3, seed 304):
+
+| engine | result | seconds |
+|---|---|---|
+| claude (opus-5) | usable flat poster, 4/4 inks | 381 |
+| codex (gpt-5.6-sol) | usable, most dimensional, 4/4 inks | 109 |
+| gemini | usable, most finished composition, 4/4 inks | 195 |
+| grok (4.6) | reply was malformed XML | — |
+| kimi (k3) | usable, simplest, 4/4 inks | 310 |
+| omnisvg (8B, Mac) | 5 paths, square canvas — not usable for scenes | 238 |
+| trace (vtracer on the Phase 7 raw frame) | faithful, 117 paths | 0.5 |
+
+**Series gate — not yet passed.** Before vector output counts as a series:
+three subjects × the candidate engines on one contact sheet, judged the way
+Phases 3–5 were, and one engine that holds the style on all three. Arrow 2 is
+not in the bake-off yet: it needs an AI Gateway key, and Vercel releases its
+free credit only after a card is added. Arrow output is also non-commercial on
+QuiverAI's free tier.
 
 ## Deferred — do not build these now
 

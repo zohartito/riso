@@ -31,7 +31,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e .
+          pip install -e .[vector]
+          # the vector lane's proof raster; without it those tests skip
+          sudo apt-get update && sudo apt-get install -y resvg
 
       - name: Check Python syntax
         run: python -m compileall -q riso tests

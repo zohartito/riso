@@ -1,8 +1,9 @@
 # riso — project rules
 
-Style-locked flat-illustration pipeline with three lanes: `riso gen` for
-ComfyUI subjects, `riso motif` for deterministic geometric posters, and
-`riso stylize` for existing images. All three end in the same riso post-pass.
+Style-locked flat-illustration pipeline with four lanes: `riso gen` for
+ComfyUI subjects, `riso motif` for deterministic geometric posters,
+`riso stylize` for existing images, and `riso vector` for palette-locked SVG
+from pluggable engines (`riso/vector.py`). All four end in the same riso post-pass.
 **Series consistency is the deliverable; one-off pretty images are not.**
 
 Full spec and phase gates: `docs/BRIEF.md`.
@@ -13,6 +14,8 @@ Full spec and phase gates: `docs/BRIEF.md`.
   3.11 — wrong). Activate: `source .venv/bin/activate`. Keep syntax 3.11-safe:
   the Mac venv is Python 3.11.7 (full suite passed there 2026-09-22).
 - Deps: numpy, pillow, requests, pytest. Justify anything else before adding it.
+  The vector lane adds only optional pieces: `vtracer` (extra `[vector]`, MIT,
+  for `--engine trace`) and the `resvg` binary for proof PNGs.
 - `tomllib` is stdlib from 3.11 on — do not add a TOML dependency.
 - `argparse` is stdlib — do not add click/typer.
 - Use `pathlib`, not `os.path`. Paths must work on macOS **and** Windows/WSL —

@@ -9,6 +9,11 @@ description = "Style-locked flat illustration from prompts, geometric motifs, or
 requires-python = ">=3.11"
 dependencies = ["numpy", "pillow", "requests"]
 
+[project.optional-dependencies]
+# only `riso vector --engine trace` needs it; the proof raster also needs the
+# resvg binary on PATH (brew install resvg)
+vector = ["vtracer"]
+
 [project.scripts]
 riso = "riso.cli:main"
 

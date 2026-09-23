@@ -19,12 +19,13 @@ import math
 import random
 import re
 import sys
+import tempfile
 from pathlib import Path
-from typing import Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from PIL import Image, ImageOps
 
-from riso import motif, post
+from riso import motif, post, vector
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
 from riso.styles import REPO_ROOT, STRENGTH_BAND, available_styles, load_style
 
@@ -333,6 +334,158 @@ def stylize(
     return out
 
 
+def render_vector(
+    prompt: str,
+    style_name: str,
+    engines: Sequence[str],
+    aspect: str = "1:1",
+    seed: Optional[int] = None,
+    out_dir: Path = OUT_DIR,
+    from_svg: Optional[Path] = None,
+    from_image: Optional[Path] = None,
+    svg_mode: str = "nearest",
+    timeout: int = 900,
+) -> List[Path]:
+    """Draw one subject as SVG with each engine; return the proof PNGs written.
+
+    With several engines this is a bake-off: failures are recorded and the
+    rest still run, and a labelled contact sheet is written next to them.
+    """
+    style = load_style(style_name)
+    palette = style.get("post", {}).get("palette")
+    if palette is None:
+        raise ValueError(f"{style['name']} has no [post] palette for the vector lane to lock to")
+    colors = [tuple(c) for c in (post.load_palette(palette) if isinstance(palette, str) else palette)]
+    width, height = dimensions(parse_aspect(aspect))
+    if seed is None:
+        seed = random.randrange(2**31)
+
+    if from_svg is not None:
+        engines = ["from-svg"]
+    elif from_image is not None:
+        engines = ["trace"]
+    for name in engines:
+        if name not in vector.ENGINES and name != "from-svg":
+            raise ValueError(f"unknown engine {name!r}; choose from {', '.join(vector.ENGINES)}")
+
+    medium = style["generate"].get("prompt_suffix", "")
+    needs_text = any(vector.ENGINES[n].kind in ("gateway", "cli", "local") for n in engines if n in vector.ENGINES)
+    prompt_sent = vector.build_prompt(prompt, medium, colors, (width, height)) if needs_text else None
+    subject_slug = slugify(prompt or (from_svg or from_image or Path("untitled")).stem)
+
+    # The SVG is already on-palette after the lock, so the raster post-pass
+    # must match colours, not re-separate them by lightness.
+    preset = _post_preset(style, seed)
+    preset["palette_mode"] = "nearest"
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written: List[Path] = []
+    sheet_entries: List[Tuple[str, Optional[Path]]] = []
+    bench: List[dict] = []
+    for name in engines:
+        engine = vector.ENGINES.get(name)
+        stem = f"vector-{style['name']}-{name}-{subject_slug}-{seed}"
+        record: dict = {"engine": name, "stem": stem}
+        text: Optional[str] = None
+        try:
+            if from_svg is not None:
+                text, meta = from_svg.read_text(encoding="utf-8"), {"from_svg": _readable_path(from_svg.resolve())}
+            else:
+                try:
+                    text, meta = vector.run_engine(
+                        engine, prompt, prompt_sent or "", ref=style["generate"]["ref"],
+                        source=from_image, colors=colors, mode=style["post"].get("palette_mode", "nearest"),
+                        timeout=timeout,
+                    )
+                except vector.VectorError as exc:
+                    text = exc.reply
+                    raise
+            raw_svg = vector.extract_svg(text)
+            root = vector.parse_svg(raw_svg)
+            flattened = vector.flatten(root)
+            lock_stats = vector.lock_palette(root, colors, svg_mode)
+            locked_svg = vector.serialize(root)
+            stray = vector.audit_paints(locked_svg, colors)
+            if stray:
+                raise vector.VectorError(f"palette lock left {len(stray)} paint value(s): {stray[:5]}")
+
+            with tempfile.TemporaryDirectory() as scratch:
+                scratch_svg = Path(scratch) / "locked.svg"
+                scratch_svg.write_text(locked_svg, encoding="utf-8")
+                size = vector.rasterize(scratch_svg, Path(scratch) / "flat.png", width, colors[-1])
+                with Image.open(Path(scratch) / "flat.png") as opened:
+                    art = post.compose(opened.convert("RGB"), preset)
+            if abs(size[0] / size[1] - width / height) > 0.02 * width / height:
+                print(
+                    f"note: {name} drew a {size[0]}x{size[1]} canvas, not {aspect}; "
+                    "the proof keeps the drawing's own proportions",
+                    file=sys.stderr,
+                )
+
+            # Nothing is written until every step above has succeeded, so a
+            # failed re-run never leaves new SVGs beside an old proof.
+            (out_dir / f"{stem}-raw.svg").write_text(raw_svg, encoding="utf-8")
+            (out_dir / f"{stem}.svg").write_text(locked_svg, encoding="utf-8")
+            png_path = out_dir / f"{stem}.png"
+            art.save(png_path)
+            sidecar = {
+                "generator": "riso.vector",
+                "engine": name,
+                "engine_kind": engine.kind if engine else "from-svg",
+                "model": engine.model if engine else None,
+                "prompt": prompt,
+                "prompt_sent": prompt if engine and engine.kind == "local" else prompt_sent,
+                "style": style["name"],
+                "palette": palette,
+                "style_ref_sent": (
+                    _readable_path(style["generate"]["ref"]) if engine and engine.kind == "gateway" else None
+                ),
+                "source": _readable_path(from_image.resolve()) if from_image else None,
+                "seed": seed,
+                "seed_note": "grain only — no engine in this lane is seedable; re-run with --from-svg",
+                "size": list(size),
+                "size_requested": [width, height],
+                "raw_svg_sha256": hashlib.sha256(raw_svg.encode("utf-8")).hexdigest(),
+                "engine_meta": meta,
+                "flattened": flattened,
+                "metrics_raw": vector.metrics(raw_svg),
+                "metrics_locked": vector.metrics(locked_svg),
+                "palette_lock": lock_stats,
+                "post": preset,
+                "licence": engine.licence if engine else "re-post of an existing SVG; its engine's licence applies",
+            }
+            png_path.with_suffix(".json").write_text(json.dumps(sidecar, indent=2) + "\n", encoding="utf-8")
+            written.append(png_path)
+            sheet_entries.append((name, png_path))
+            record.update(
+                ok=True, seconds=meta.get("seconds"),
+                bytes=sidecar["metrics_raw"]["bytes"], paths=sidecar["metrics_raw"]["paths"],
+                on_palette=f"{lock_stats['distinct_on_palette']}/{lock_stats['distinct_in']}",
+            )
+        except Exception as exc:  # one engine failing must never end a bake-off
+            detail = str(exc) if isinstance(exc, vector.VectorError) else f"{type(exc).__name__}: {exc}"
+            message = vector.redact(detail)
+            print(f"riso: {name}: {message}", file=sys.stderr)
+            if text and from_svg is None:
+                # The reply cost a model call; keep it so it can be inspected
+                # or hand-repaired and re-run with --from-svg.
+                (out_dir / f"{stem}-reply.txt").write_text(vector.redact(text), encoding="utf-8")
+            sheet_entries.append((f"{name} (failed)", None))
+            record.update(ok=False, error=message[:300])
+        bench.append(record)
+
+    if len(engines) > 1:
+        sheet = vector.contact_sheet(sheet_entries, out_dir / f"vector-bench-{style['name']}-{subject_slug}-{seed}.png")
+        sheet.with_suffix(".json").write_text(
+            json.dumps({"prompt": prompt, "style": style["name"], "seed": seed, "results": bench}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        written.append(sheet)
+    if not any(r["ok"] for r in bench):
+        raise vector.VectorError("no engine produced an SVG")
+    return written
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="riso", description="Style-locked flat-illustration pipeline."
@@ -395,6 +548,27 @@ def build_parser() -> argparse.ArgumentParser:
     stylize_parser.add_argument("--misregister", type=int, default=1)
     stylize_parser.add_argument("--out", type=Path)
 
+    vector_parser = sub.add_parser(
+        "vector", help="draw a subject as palette-locked SVG with one or more engines"
+    )
+    vector_parser.add_argument("prompt", nargs="?", default="", help="subject of the image")
+    vector_parser.add_argument("--style", required=True, help="style preset from styles/")
+    vector_parser.add_argument(
+        "--engine",
+        default="claude",
+        help=f"comma-separated; several = bake-off with a contact sheet ({', '.join(vector.ENGINES)})",
+    )
+    vector_parser.add_argument("--ar", default="1:1", help="aspect ratio, e.g. 3:4")
+    vector_parser.add_argument("--seed", type=int, help="grain seed; recorded either way")
+    vector_parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
+    vector_parser.add_argument("--from-svg", type=Path, help="re-lock and re-post an existing SVG")
+    vector_parser.add_argument("--from-image", type=Path, help="raster to trace (engine: trace)")
+    vector_parser.add_argument(
+        "--svg-mode", choices=post.PALETTE_MODES, default="nearest",
+        help="how SVG colours map to inks: nearest hue, or lightness rank",
+    )
+    vector_parser.add_argument("--timeout", type=int, default=900, help="seconds per engine")
+
     sub.add_parser("styles", help="list style presets")
     sub.add_parser("motifs", help="list procedural motif renderers")
     sub.add_parser("palettes", help="list palettes")
@@ -445,6 +619,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 out=args.out,
                 keep_raw=args.keep_raw,
             )
+        elif args.command == "vector":
+            paths = render_vector(
+                args.prompt,
+                args.style,
+                [name.strip() for name in args.engine.split(",") if name.strip()],
+                aspect=args.ar,
+                seed=args.seed,
+                out_dir=args.out_dir,
+                from_svg=args.from_svg,
+                from_image=args.from_image,
+                svg_mode=args.svg_mode,
+                timeout=args.timeout,
+            )
+            print("\n".join(str(p) for p in paths))
+            return 0
         else:
             out = stylize(
                 args.input,
@@ -455,7 +644,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 misregister=args.misregister,
                 out=args.out,
             )
-    except (ComfyError, OSError, ValueError) as exc:
+    except (ComfyError, vector.VectorError, OSError, ValueError) as exc:
         print(f"riso: {exc}", file=sys.stderr)
         return 1
 

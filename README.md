@@ -91,6 +91,38 @@ rights still apply; post-processing does not change provenance.
 `luma` is the default mapping for off-palette images; use
 `--palette-mode nearest` when the input already sits near the intended swatches.
 
+## Draw as SVG
+
+```bash
+riso vector "a tower crane lifting a timber beam" --style blueprint-coral --ar 2:3 --engine claude
+riso vector "..." --style blueprint-coral --engine claude,codex,gemini,grok,kimi   # bake-off
+riso vector --style blueprint-coral --from-image out/some-frame-raw.png           # trace a raster
+riso vector --style blueprint-coral --from-svg out/vector-...-raw.svg             # re-post, no model call
+```
+
+A fourth lane beside `gen`, `motif` and `stylize`. The style still owns the
+palette and the press treatment; only where the drawing comes from changes.
+Each run writes the model's SVG as returned (`-raw.svg`), the palette-locked SVG
+(`.svg`), a post-passed proof (`.png`) and a JSON sidecar with engine, model,
+timing, token usage and licence. Several engines at once also write a labelled
+contact sheet and a `vector-bench-*.json`.
+
+| Engine | Source | Cost |
+|---|---|---|
+| `arrow-2`, `arrow-2-telos` | QuiverAI via Vercel AI Gateway; key in `~/.config/vercel/env` | metered |
+| `claude`, `codex`, `gemini`, `grok`, `kimi` | subscription CLIs writing SVG code | subscription |
+| `omnisvg` | open weights, local wrapper in `~/projects/omnisvg` (`$RISO_OMNISVG_CMD` overrides) | free |
+| `trace` | vtracer on a raster (`--from-image`) | free |
+
+Colour is decided in code: every fill, stroke and stop colour is snapped to the
+palette after generation (`--svg-mode nearest` by default, `luma` to separate by
+lightness like the raster lanes). Scripts, `foreignObject` and event handlers are
+stripped. No engine is seedable, so `--from-svg` is how an image is re-run.
+
+Needs `pip install -e .[vector]` for `trace`, and the `resvg` binary for the
+proof PNG (`brew install resvg`). Arrow output is non-commercial on QuiverAI's
+free tier; OmniSVG weights are Apache-2.0 but trained on CC BY-NC-SA data.
+
 ## What this pipeline does and does not do
 
 **It renders dense, repeating subjects.** Crowds, banks of faces, fields of
