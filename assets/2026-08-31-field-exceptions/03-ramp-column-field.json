@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-31-field-exceptions/raw/03-ramp-column-field.png",
+  "source_sha256": "2e7f27687166a5e056a91acb58e40310725de38d593f51ed489b6e839076b9cf",
+  "palette": "rose-aqua-field",
+  "seed": 633,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "rose-aqua-field",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 633,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

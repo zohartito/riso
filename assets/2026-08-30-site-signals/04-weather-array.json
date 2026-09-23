@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-30-site-signals/raw/04-weather-array.png",
+  "source_sha256": "0257ab19ccc3d96323cbc892a81baf401048eb1309638a98fb91cfa8f93a2216",
+  "palette": "signal-violet",
+  "seed": 514,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "signal-violet",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 514,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

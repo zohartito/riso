@@ -1,0 +1,25 @@
+# field-exceptions — prompt-driven architectural fields in which one spatial
+# deviation carries the narrative. The external crowd images are inspection
+# only; this preset uses an internally generated object-free reference.
+
+name = "field-exceptions"
+description = "Repeated architectural assemblies interrupted by one rose, aqua, plum, and vellum exception."
+
+[generate]
+ref = "refs/style-field-exceptions-abstract.png"
+strength = 0.08
+steps = 4
+crop_keep = 0.82
+
+# Medium only: no artist, people, seats, commuter scene, or borrowed motif.
+prompt_suffix = ", architectural relief assembled from cut drafting vellum and corrugated card, opaque monoprint ink, broad overlapping shapes, coarse press tooth, repeated modules forming a dense edge-to-edge field, one clear spatial exception, forms defined by color adjacency, no contour outlines, no gradients, no photorealistic lighting, no text"
+
+[post]
+palette = "rose-aqua-field"
+palette_mode = "luma"
+
+[post.misregister]
+px = 1
+
+[post.grain]
+amount = 0.09

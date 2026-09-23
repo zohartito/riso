@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-31-field-exceptions/raw/01-roof-rain-court.png",
+  "source_sha256": "2a5e527bf608cf7f300526801888b7c305ed3132a3310b68c2141bd9ebb99272",
+  "palette": "rose-aqua-field",
+  "seed": 631,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "rose-aqua-field",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 631,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

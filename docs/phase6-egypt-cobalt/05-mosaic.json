@@ -1,0 +1,22 @@
+{
+  "generator": "riso.motif",
+  "motif": "mosaic",
+  "palette": "egypt-cobalt",
+  "seed": 53,
+  "density": 1.1,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {
+    "grain": {
+      "amount": 0.08,
+      "seed": 53,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "procedural renderer; no external model or adapter"
+}

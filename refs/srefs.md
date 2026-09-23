@@ -20,10 +20,24 @@ they are the style identity, not scratch files.
 | `style-flat-planes.png` | Four large flat planes, cream/coral/yellow, soft curved boundaries. No objects, no borders, no shadows. | — (outline-free alternative, see the trade below) |
 | `style-riso-poster.png` | Flat two-ink screenprint poster: teal/lilac blocks, cream ground, **one circle**. | — (retired 2026-08-15: the circle reproduced into output) |
 | `style-stained-glass.png` | Art nouveau stained glass: heavy black leading, jewel tones, dense botanical pattern, backlit. Deliberately the opposite of the poster. | — (Phase 2 proof ref; **never** use as a live ref, see below) |
+| `style-cobalt-blockprint-abstract.png` | Dense object-free cobalt/sand organic regions, generated locally by `riso.motif mosaic --seed 79 --density 3.0`; exact receipt beside the PNG. | `cobalt-blockprint` |
+| `style-blueprint-coral-abstract.png` | Object-free navy/aqua organic regions, generated locally by `riso.motif mosaic --seed 93 --density 2.7`; exact receipt beside the PNG. | `blueprint-coral` |
+| `style-site-signals-abstract.png` | Object-free ink/violet regions, generated locally by `riso.motif mosaic --seed 117 --density 2.4`; exact receipt beside the PNG. | `site-signals` |
 
-Both were generated locally on 2026-08-15 with `flux1-schnell-fp8` (Apache-2.0)
-rather than scraped, so they are licence-clean and reproducible. Prompts are in
-the Phase 2 record below.
+The earlier Phase 2 references were generated locally on 2026-08-15 with
+`flux1-schnell-fp8` rather than scraped. The two 2026-08-30 block-print
+references were generated deterministically by `riso.motif`, use no model, and
+have sidecar receipts. None is scraped artwork.
+
+## External visual targets — links only
+
+These sources define generic mechanics to study; their files are not committed
+and do not become production Redux references.
+
+| source | useful evidence | pipeline decision |
+|---|---|---|
+| [Gizem Akdag, “Egypt exploration” (2026-08-30)](https://x.com/gizakdag/status/2094027774134554666) | Four two-tone images that helped identify generic print mechanics: uniform tooth, flat adjacency and no modeled light. Their figures, rays, pyramidal fields and water composition are source-specific and excluded from public work. | `egypt-cobalt` and the Phase 6 motifs are now internal-study-only. Do **not** use the artist images as Redux refs or publish the derivative study set. Public work moves to an independently selected palette, internally generated abstract reference, original prompt subjects and different compositional logic. |
+| [Gizem Akdag, “Red and blue” (2026-08-28)](https://x.com/gizakdag/status/2093431039729263022) | Four portrait collages pair tactile pigment on photographic/material surfaces with a saturated field and monumental central silhouette. Source-specific content includes striped shrouds around faces, painted animals, a camel with pyramids, and a painted mountain. | Inspection only. Do not upload or ship the images, sample their swatches, reproduce their stripe geometry, or reuse any subject/composition. `site-signals` translates only the generic material contrast into original architectural field-equipment prompts, a new orange/violet/ink/paper palette, and an internal abstract reference. |
 
 ## What Redux actually does with these
 
@@ -292,3 +306,18 @@ Eighteen candidates were minted across four rounds to get two keepers. Most
 were rejected on rule 2: circles, squares, grids, dots, torn-paper shadows.
 Dense and object-free pull against each other — density wants many repeated
 marks, and repeated marks are objects.
+
+## Field Exceptions internal reference (2026-08-31)
+
+`style-field-exceptions-abstract.png` is a deterministic `riso.motif mosaic`
+render made inside this repository with `rose-aqua-field`, seed 631, density
+2.6, zero grain, and zero misregistration. It contains no imported artwork,
+figures, seats, faces, signs, or recognizable architectural object. Its two
+interlocking ink fields are deliberately low-information; the text prompt owns
+the roof, facade, structure, and ground subjects.
+
+The external Ege Berkina “Just another day in the crowd” images were inspected
+only to identify the generic structure of repetition plus one deviation. They
+were not passed to image generation, uploaded to Redux, copied into `refs/`, or
+named in a prompt. Commuters, auditorium seats, phones, gestures, expressions,
+green-dominant palette, seals, and every source composition are excluded.

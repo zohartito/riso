@@ -1,0 +1,28 @@
+{
+  "prompt": "exploded axonometric of a compact modular courtyard house, roof panels, stair flights, wall cassettes and floor decks hovering apart in clearly ordered layers, no people, generous paper space, one compact architectural composition",
+  "prompt_sent": "exploded axonometric of a compact modular courtyard house, roof panels, stair flights, wall cassettes and floor decks hovering apart in clearly ordered layers, no people, generous paper space, one compact architectural composition, limited-palette architectural block print made from bold matte cut-paper shapes, solid overlapping ink fields, forms defined by colour adjacency, crisp silhouettes, subtle screen-print texture, no outlines, no gradients, no photorealistic lighting, no text",
+  "style": "blueprint-coral",
+  "style_ref": "refs/style-blueprint-coral-abstract.png",
+  "strength": 0.08,
+  "model": "flux1-schnell-fp8.safetensors",
+  "style_adapter": "flux1-redux-dev.safetensors",
+  "licence": "base model Apache-2.0; the Redux adapter is FLUX.1 [dev] Non-Commercial, and that restriction travels with this image",
+  "seed": 302,
+  "steps": 4,
+  "size": [
+    832,
+    1280
+  ],
+  "crop_keep": 0.78,
+  "post": {
+    "palette": "blueprint-coral",
+    "palette_mode": "luma",
+    "misregister": {
+      "px": 1
+    },
+    "grain": {
+      "amount": 0.08,
+      "seed": 302
+    }
+  }
+}

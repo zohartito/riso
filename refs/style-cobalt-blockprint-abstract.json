@@ -1,0 +1,14 @@
+{
+  "generator": "riso.motif",
+  "motif": "mosaic",
+  "palette": "egypt-cobalt",
+  "seed": 79,
+  "density": 3.0,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {},
+  "role": "object-free internal style reference for the prompt-driven cobalt-blockprint preset",
+  "sha256": "4aad5776a69a45a9ec43e9d62561e39bc827569c75b961aca40aba4da7739b29"
+}

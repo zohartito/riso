@@ -1,0 +1,19 @@
+{
+  "generator": "riso.motif",
+  "motif": "mosaic",
+  "palette": "rose-aqua-field",
+  "seed": 631,
+  "density": 2.6,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {
+    "grain": {
+      "amount": 0.0,
+      "seed": 631,
+      "scale": 2
+    }
+  },
+  "licence": "procedural renderer; no external model or adapter"
+}

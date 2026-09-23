@@ -7,6 +7,7 @@ not the model. What the model does is judged by eye, in docs/.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 
 import pytest
@@ -68,6 +69,88 @@ def test_tennis_preset_post_table_is_a_valid_compose_preset():
     style = styles.load_style("tennis")
     swatch = Image.new("RGB", (16, 16), (120, 130, 140))
     assert post.compose(swatch, cli._post_preset(style, seed=1)).size == (16, 16)
+
+
+def test_cobalt_blockprint_preset_is_internal_and_prompt_driven():
+    style = styles.load_style("cobalt-blockprint")
+    settings = style["generate"]
+    assert settings["ref"].name == "style-cobalt-blockprint-abstract.png"
+    assert settings["ref"].is_file()
+    assert style["post"]["palette"] == "egypt-cobalt"
+    assert settings["strength"] == 0.08
+
+    subject = "workers carrying modular panels in staggered rows"
+    sent = cli.resolved_prompt(subject, style)
+    assert sent.startswith(subject)
+    assert "block print" in sent
+    for borrowed in ("gizem", "akdag", "egypt", "pyramid", "sarcophagus", "moon"):
+        assert borrowed not in sent.lower()
+
+
+def test_blueprint_coral_preset_has_original_inputs_and_mechanical_suffix():
+    style = styles.load_style("blueprint-coral")
+    settings = style["generate"]
+    assert settings["ref"].name == "style-blueprint-coral-abstract.png"
+    assert settings["ref"].is_file()
+    assert style["post"]["palette"] == "blueprint-coral"
+
+    subject = "a crane lowering a stair core into a timber frame"
+    sent = cli.resolved_prompt(subject, style)
+    assert sent.startswith(subject)
+    assert "architectural block print" in sent
+    for borrowed in ("gizem", "akdag", "egypt", "pyramid", "sarcophagus"):
+        assert borrowed not in sent.lower()
+
+
+def test_site_signals_preset_has_original_inputs_and_no_source_subjects():
+    style = styles.load_style("site-signals")
+    settings = style["generate"]
+    assert settings["ref"].name == "style-site-signals-abstract.png"
+    assert settings["ref"].is_file()
+    assert style["post"]["palette"] == "signal-violet"
+
+    subject = "survey prisms arranged along an unfinished concrete ramp"
+    sent = cli.resolved_prompt(subject, style)
+    assert sent.startswith(subject)
+    assert "architectural material collage" in sent
+    for borrowed in (
+        "gizem",
+        "akdag",
+        "camel",
+        "pyramid",
+        "zebra",
+        "mountain",
+        "striped",
+    ):
+        assert borrowed not in sent.lower()
+
+
+def test_field_exceptions_preset_has_original_inputs_and_no_source_subjects():
+    style = styles.load_style("field-exceptions")
+    settings = style["generate"]
+    assert settings["ref"].name == "style-field-exceptions-abstract.png"
+    assert settings["ref"].is_file()
+    assert style["post"]["palette"] == "rose-aqua-field"
+
+    subject = "sawtooth roof monitors surrounding an inverted rain court"
+    sent = cli.resolved_prompt(subject, style)
+    assert sent.startswith(subject)
+    assert "architectural relief" in sent
+    for borrowed in (
+        "ege",
+        "berkina",
+        "commuter",
+        "passenger",
+        "auditorium",
+        "phone",
+        "green skin",
+    ):
+        assert borrowed not in sent.lower()
+
+
+def test_resolved_prompt_rejects_empty_subject():
+    with pytest.raises(ValueError, match="cannot be empty"):
+        cli.resolved_prompt("   ", styles.load_style("cobalt-blockprint"))
 
 
 def test_load_style_rejects_a_missing_reference(tmp_path):
@@ -175,4 +258,97 @@ def test_gen_reports_a_dead_comfyui_instead_of_traceback(capsys, monkeypatch):
 
 def test_styles_subcommand_lists_presets(capsys):
     assert cli.main(["styles"]) == 0
-    assert "tennis" in capsys.readouterr().out.split()
+    listed = capsys.readouterr().out.split()
+    assert "tennis" in listed
+    assert "cobalt-blockprint" in listed
+    assert "blueprint-coral" in listed
+    assert "site-signals" in listed
+    assert "field-exceptions" in listed
+
+
+def test_show_prompt_prints_exact_text_without_contacting_comfy(capsys, monkeypatch):
+    class _MustNotStart:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError("--show-prompt must not construct Comfy")
+
+    monkeypatch.setattr(cli, "Comfy", _MustNotStart)
+    subject = "paper kites crossing stepped rooftops"
+    assert cli.main(
+        ["gen", subject, "--style", "cobalt-blockprint", "--show-prompt"]
+    ) == 0
+    sent = capsys.readouterr().out.strip()
+    assert sent.startswith(subject)
+    assert "cut-paper shapes" in sent
+
+
+# -- offline geometric and input-image lanes --------------------------------
+
+
+def test_motif_writes_finished_raw_and_provenance(tmp_path):
+    out = tmp_path / "rays.png"
+    written = cli.render_motif(
+        "rays",
+        palette="egypt-cobalt",
+        aspect="2:3",
+        seed=23,
+        density=1.2,
+        out=out,
+        keep_raw=True,
+    )
+
+    assert written == out and out.is_file()
+    assert out.with_name("rays-raw.png").is_file()
+    with Image.open(out) as image:
+        assert image.size == cli.dimensions((2, 3))
+    record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    assert record["generator"] == "riso.motif"
+    assert record["motif"] == "rays"
+    assert record["palette"] == "egypt-cobalt"
+    assert record["seed"] == 23
+    assert record["density"] == 1.2
+    assert "no external model" in record["licence"]
+
+
+def test_motif_cli_does_not_need_comfyui(tmp_path, capsys):
+    out = tmp_path / "crowd.png"
+    assert cli.main(
+        ["motif", "crowd", "--seed", "4", "--out", str(out)]
+    ) == 0
+    assert out.is_file()
+    assert str(out) in capsys.readouterr().out
+
+
+def test_stylize_writes_a_finished_png_and_hashes_its_source(tmp_path):
+    source = tmp_path / "source.jpg"
+    out = tmp_path / "finished.png"
+    Image.linear_gradient("L").resize((120, 180)).convert("RGB").save(source)
+
+    written = cli.stylize(source, seed=11, out=out)
+
+    assert written == out and out.is_file()
+    with Image.open(out) as image:
+        assert image.size == (120, 180)
+    record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    assert record["generator"] == "riso.stylize"
+    assert record["source_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert record["post"]["palette"] == "egypt-cobalt"
+    assert "source-image rights" in record["licence"]
+
+
+def test_stylize_reports_a_missing_input(capsys):
+    assert cli.main(["stylize", "not-here.png"]) == 1
+    assert "no input image" in capsys.readouterr().err
+
+
+def test_stylize_refuses_to_overwrite_its_input(tmp_path):
+    source = tmp_path / "source.png"
+    Image.new("RGB", (20, 20), "white").save(source)
+    with pytest.raises(ValueError, match="must not overwrite"):
+        cli.stylize(source, seed=1, out=source)
+
+
+def test_inventory_subcommands_list_the_new_assets(capsys):
+    assert cli.main(["motifs"]) == 0
+    assert set(capsys.readouterr().out.split()) >= {"crowd", "rays", "peaks"}
+    assert cli.main(["palettes"]) == 0
+    assert "egypt-cobalt" in capsys.readouterr().out.split()

@@ -1,0 +1,19 @@
+{
+  "generator": "riso.motif",
+  "motif": "mosaic",
+  "palette": "blueprint-coral",
+  "seed": 93,
+  "density": 2.7,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {
+    "grain": {
+      "amount": 0.0,
+      "seed": 93,
+      "scale": 2
+    }
+  },
+  "licence": "procedural renderer; no external model or adapter"
+}

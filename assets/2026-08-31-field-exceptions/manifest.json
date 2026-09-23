@@ -1,0 +1,59 @@
+{
+  "status": "review",
+  "posted": false,
+  "series": "field exceptions",
+  "source_url": "https://x.com/egeberkina/status/2094403941471564220",
+  "source_usage": "inspection only; no source image supplied to generation",
+  "raw_generation": "OpenAI built-in image generation",
+  "post_processor": "riso.stylize",
+  "palette": "rose-aqua-field",
+  "size": [1024, 1536],
+  "style_reference": {
+    "file": "../../refs/style-field-exceptions-abstract.png",
+    "generator": "riso.motif mosaic",
+    "sha256": "e1562c16e91ed1fe1abf75380fa4b1fc4584d4d85bdce74c6f4bff4f3dd8ed40"
+  },
+  "items": [
+    {
+      "file": "01-roof-rain-court.png",
+      "sha256": "5535fe46c63291c5f916ff1b445d32e9948db6e0e0cb5d6c8da4a4d52be8e3c3",
+      "raw_file": "raw/01-roof-rain-court.png",
+      "raw_sha256": "2a5e527bf608cf7f300526801888b7c305ed3132a3310b68c2141bd9ebb99272",
+      "post_receipt": "01-roof-rain-court.json",
+      "prompt_id": "01-roof-rain-court"
+    },
+    {
+      "file": "02-balcony-commons.png",
+      "sha256": "f5f1e9d2b5fbb46fc56412324050b6db267668d97bbb937e17b6489227b6bdcb",
+      "raw_file": "raw/02-balcony-commons.png",
+      "raw_sha256": "4c4f1538e0091bbaeeb00538db5fc78e1b3d8777d1251d1d6574b448d6656b4d",
+      "post_receipt": "02-balcony-commons.json",
+      "prompt_id": "02-balcony-commons"
+    },
+    {
+      "file": "03-ramp-column-field.png",
+      "sha256": "8ee241d4fe028f5005d461044bc11fd2f883b03ce187613853b0f853f86eb65c",
+      "raw_file": "raw/03-ramp-column-field.png",
+      "raw_sha256": "2e7f27687166a5e056a91acb58e40310725de38d593f51ed489b6e839076b9cf",
+      "post_receipt": "03-ramp-column-field.json",
+      "prompt_id": "03-ramp-column-field"
+    },
+    {
+      "file": "04-rain-garden-grid.png",
+      "sha256": "635dbcbf466a4f5fef3854298b8140fc7484211bab96dc7f628942c35267a185",
+      "raw_file": "raw/04-rain-garden-grid.png",
+      "raw_sha256": "d653cf4e568bffeb5b56f444c4d1df60ef298a9eb00208d55b811a0a0790f391",
+      "post_receipt": "04-rain-garden-grid.json",
+      "prompt_id": "04-rain-garden-grid"
+    }
+  ],
+  "review": {
+    "contact_sheet": "contact-sheet.png",
+    "contact_sheet_sha256": "58b0d9f36e3d2aed4f457802d6897f4561bd16885416fef4a472d916fd10548a",
+    "visual_source_boundary": "passed",
+    "creative_approval": "pending",
+    "metadata_private_identifiers": "none found",
+    "ocr": "no text detected"
+  },
+  "live_preset_validation": "pending; desktop-zt Tailscale reachable but SSH timed out"
+}

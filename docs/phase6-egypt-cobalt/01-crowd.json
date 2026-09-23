@@ -1,0 +1,22 @@
+{
+  "generator": "riso.motif",
+  "motif": "crowd",
+  "palette": "egypt-cobalt",
+  "seed": 11,
+  "density": 0.95,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {
+    "grain": {
+      "amount": 0.08,
+      "seed": 11,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "procedural renderer; no external model or adapter"
+}

@@ -1,0 +1,37 @@
+{
+  "status": "production",
+  "posted": false,
+  "series": "construction choreography",
+  "style": "blueprint-coral",
+  "size": [832, 1280],
+  "attachments": [
+    {
+      "file": "01-truss-procession.png",
+      "sha256": "be224fb874be1d1c61dc53739af7bb769c8061b1532f34d67853b19d113810d0",
+      "receipt": "01-truss-procession.json"
+    },
+    {
+      "file": "02-exploded-courtyard.png",
+      "sha256": "d5dfbdd97d74d34a62ed2f79a30f32eda2e445ffe4fc966cfb2d998aabe69eec",
+      "receipt": "02-exploded-courtyard.json"
+    },
+    {
+      "file": "03-component-yard.png",
+      "sha256": "ef79a8da027cd4b40b4c74ef18c1c2dc1c40f4e3664f948b6e9d02ebfc3670d9",
+      "receipt": "03-component-yard.json"
+    },
+    {
+      "file": "04-stair-core-lift.png",
+      "sha256": "7cea18cdef6e6949afc335a0074d6e7e13aee21d426f457b64b8e8d30944f308",
+      "receipt": "04-stair-core-lift.json"
+    }
+  ],
+  "review": {
+    "contact_sheet": "contact-sheet.png",
+    "contact_sheet_sha256": "e20f7587e6bb58323b689ba9fedfb3f9ed985a364bae9ba9df5436c3141d26a0",
+    "visual_inspection": "passed",
+    "metadata_private_identifiers": "none found",
+    "ocr": "no actual text visible; tesseract false positives reviewed"
+  },
+  "licence_boundary": "FLUX.1 Redux dev adapter is non-commercial"
+}

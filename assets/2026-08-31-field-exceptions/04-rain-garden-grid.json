@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-31-field-exceptions/raw/04-rain-garden-grid.png",
+  "source_sha256": "d653cf4e568bffeb5b56f444c4d1df60ef298a9eb00208d55b811a0a0790f391",
+  "palette": "rose-aqua-field",
+  "seed": 634,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "rose-aqua-field",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 634,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

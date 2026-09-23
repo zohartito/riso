@@ -1,0 +1,10 @@
+{
+  "name": "egypt-cobalt",
+  "source": "reference: @gizakdag Egypt exploration (X, 2026-08-30), https://x.com/gizakdag/status/2094027774134554666",
+  "notes": "Representative colors sampled across the four posted JPEGs: one deep cobalt ink, a warm sand field, and an off-white paper tone. Treat these as a screen target, not literal ink formulas. The source images remain external and are not production Redux references because their pyramids, figures, and stripe motifs can transfer into output.",
+  "colors": [
+    "#031E62",
+    "#DFC2A6",
+    "#EBE8DF"
+  ]
+}

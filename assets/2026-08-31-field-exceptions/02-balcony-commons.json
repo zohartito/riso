@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-31-field-exceptions/raw/02-balcony-commons.png",
+  "source_sha256": "4c4f1538e0091bbaeeb00538db5fc78e1b3d8777d1251d1d6574b448d6656b4d",
+  "palette": "rose-aqua-field",
+  "seed": 632,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "rose-aqua-field",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 632,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

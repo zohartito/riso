@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-30-site-signals/raw/03-wind-scaffold.png",
+  "source_sha256": "713c5e655a6b66b3d01142236347b4f840520995b44c7b5381d82e547a4b51bf",
+  "palette": "signal-violet",
+  "seed": 513,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "signal-violet",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 513,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

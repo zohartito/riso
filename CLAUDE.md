@@ -1,8 +1,9 @@
 # riso — project rules
 
-Style-locked flat-illustration pipeline. Subject prompt + style reference →
-flat illustration → riso post-pass → export. **Series consistency is the
-deliverable; one-off pretty images are not.**
+Style-locked flat-illustration pipeline with three lanes: `riso gen` for
+ComfyUI subjects, `riso motif` for deterministic geometric posters, and
+`riso stylize` for existing images. All three end in the same riso post-pass.
+**Series consistency is the deliverable; one-off pretty images are not.**
 
 Full spec and phase gates: `docs/BRIEF.md`.
 

@@ -1,0 +1,45 @@
+{
+  "status": "review",
+  "posted": false,
+  "series": "site signals",
+  "source_url": "https://x.com/gizakdag/status/2093431039729263022",
+  "source_usage": "inspection only; no source image supplied to generation",
+  "raw_generation": "OpenAI built-in image generation",
+  "post_processor": "riso.stylize",
+  "palette": "signal-violet",
+  "size": [1024, 1536],
+  "items": [
+    {
+      "file": "01-survey-ramp.png",
+      "sha256": "588e29442ec09195efc814d4444499b05f6ffd53ceeb7871a8fc4bf492c12094",
+      "post_receipt": "01-survey-ramp.json",
+      "prompt_id": "01-survey-ramp"
+    },
+    {
+      "file": "02-facade-cassettes.png",
+      "sha256": "9ab626068f47cdc18382f03a6772e8c467188ff2883e2bd59718042c2dc4bed5",
+      "post_receipt": "02-facade-cassettes.json",
+      "prompt_id": "02-facade-cassettes"
+    },
+    {
+      "file": "03-wind-scaffold.png",
+      "sha256": "f6229857c4f1154ac5a165867cb076a0a963192c80c9b18f305ecc11fef63b74",
+      "post_receipt": "03-wind-scaffold.json",
+      "prompt_id": "03-wind-scaffold"
+    },
+    {
+      "file": "04-weather-array.png",
+      "sha256": "e1bcb36d1a934caeff3cc7877f84616855c04dba033fca5ef4cea4b2b3808f09",
+      "post_receipt": "04-weather-array.json",
+      "prompt_id": "04-weather-array"
+    }
+  ],
+  "review": {
+    "contact_sheet": "contact-sheet.png",
+    "contact_sheet_sha256": "b36bad5d7e095a70c92eca28f8e305b5939c4fc47dfc9fbcc98f3510f9bf94bd",
+    "visual_source_boundary": "passed",
+    "creative_approval": "pending",
+    "metadata_private_identifiers": "none found",
+    "ocr": "no actual text visible; texture false positives reviewed"
+  }
+}

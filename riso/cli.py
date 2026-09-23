@@ -12,6 +12,7 @@ cannot be re-run is not a series.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import math
@@ -21,9 +22,9 @@ import sys
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
-from PIL import Image
+from PIL import Image, ImageOps
 
-from riso import post
+from riso import motif, post
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
 from riso.styles import REPO_ROOT, STRENGTH_BAND, available_styles, load_style
 
@@ -92,6 +93,14 @@ def _post_preset(style: dict, seed: int) -> dict:
     return preset
 
 
+def resolved_prompt(prompt: str, style: dict) -> str:
+    """Exact text sent to Flux: user-authored subject plus medium mechanics."""
+    subject = prompt.strip()
+    if not subject:
+        raise ValueError("prompt cannot be empty")
+    return subject + style["generate"].get("prompt_suffix", "")
+
+
 def generate(
     prompt: str,
     style_name: str,
@@ -133,7 +142,7 @@ def generate(
     # The reference cannot carry flatness and subject clarity at the same
     # strength — see refs/srefs.md. The preset says "flat" in words too, which
     # is what lets the strength sit low enough for the subject to survive.
-    full_prompt = prompt + settings.get("prompt_suffix", "")
+    full_prompt = resolved_prompt(prompt, style)
 
     uploaded = comfy.upload_image(settings["ref"])
     raw_png = comfy.generate(
@@ -217,6 +226,113 @@ def generate(
     return out
 
 
+def _offline_post(seed: int, grain: float, misregister: int) -> dict:
+    """Press treatment shared by procedural motifs and imported artwork."""
+    preset = {
+        "grain": {"amount": grain, "seed": seed, "scale": 2},
+    }
+    if misregister:
+        preset["misregister"] = {"px": misregister}
+    return preset
+
+
+def render_motif(
+    motif_name: str,
+    palette: str = "egypt-cobalt",
+    aspect: str = "2:3",
+    seed: Optional[int] = None,
+    density: float = 1.0,
+    grain: float = 0.08,
+    misregister: int = 1,
+    out: Optional[Path] = None,
+    keep_raw: bool = False,
+) -> Path:
+    """Render one model-free geometric poster and write its provenance."""
+    if seed is None:
+        seed = random.randrange(2**31)
+    width, height = dimensions(parse_aspect(aspect))
+    raw = motif.render(motif_name, palette, (width, height), seed, density)
+    preset = _offline_post(seed, grain, misregister)
+    art = post.compose(raw, preset)
+
+    if out is None:
+        out = OUT_DIR / f"motif-{motif_name}-{palette}-{seed}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    art.save(out)
+    if keep_raw:
+        raw.save(out.with_name(f"{out.stem}-raw.png"))
+
+    out.with_suffix(".json").write_text(
+        json.dumps(
+            {
+                "generator": "riso.motif",
+                "motif": motif_name,
+                "palette": palette,
+                "seed": seed,
+                "density": density,
+                "size": [width, height],
+                "post": preset,
+                "licence": "procedural renderer; no external model or adapter",
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return out
+
+
+def stylize(
+    source: Path,
+    palette: str = "egypt-cobalt",
+    seed: Optional[int] = None,
+    palette_mode: str = "luma",
+    grain: float = 0.08,
+    misregister: int = 1,
+    out: Optional[Path] = None,
+) -> Path:
+    """Apply the deterministic press pipeline to an existing image."""
+    source = source.expanduser()
+    if not source.is_file():
+        raise FileNotFoundError(f"no input image at {source}")
+    if out is not None and out.expanduser().resolve() == source.resolve():
+        raise ValueError("stylize output must not overwrite its input image")
+    if seed is None:
+        seed = random.randrange(2**31)
+
+    preset = {
+        "palette": palette,
+        "palette_mode": palette_mode,
+        **_offline_post(seed, grain, misregister),
+    }
+    with Image.open(source) as opened:
+        image = ImageOps.exif_transpose(opened).convert("RGB")
+        art = post.compose(image, preset)
+
+    if out is None:
+        out = OUT_DIR / f"stylized-{slugify(source.stem)}-{palette}-{seed}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    art.save(out)
+    out.with_suffix(".json").write_text(
+        json.dumps(
+            {
+                "generator": "riso.stylize",
+                "source": _readable_path(source.resolve()),
+                "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                "palette": palette,
+                "seed": seed,
+                "size": [art.width, art.height],
+                "post": preset,
+                "licence": "post-processing only; source-image rights still apply",
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return out
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="riso", description="Style-locked flat-illustration pipeline."
@@ -232,15 +348,56 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("--ar", default="1:1", help="aspect ratio, e.g. 3:4")
     gen.add_argument("--seed", type=int, help="defaults to random; recorded either way")
-    gen.add_argument("--out", type=Path, help="output path (default out/<style>-<slug>-<seed>.png)")
+    gen.add_argument(
+        "--out",
+        type=Path,
+        help="output path (default out/<style>-<slug>-<seed>.png)",
+    )
     gen.add_argument("--host", default="127.0.0.1:8188", help="ComfyUI host:port")
     gen.add_argument(
         "--keep-raw",
         action="store_true",
         help="also write the pre-post-pass image, for judging what each half did",
     )
+    gen.add_argument(
+        "--show-prompt",
+        action="store_true",
+        help="print the exact user prompt plus style suffix without generating",
+    )
+
+    motif_parser = sub.add_parser(
+        "motif", help="render a deterministic geometric poster without ComfyUI"
+    )
+    motif_parser.add_argument("motif", choices=motif.available_motifs())
+    motif_parser.add_argument("--palette", default="egypt-cobalt")
+    motif_parser.add_argument("--ar", default="2:3", help="aspect ratio, e.g. 2:3")
+    motif_parser.add_argument("--seed", type=int, help="defaults to random; recorded either way")
+    motif_parser.add_argument(
+        "--density", type=float, default=1.0, help="motif repetition, 0.25 to 3.0"
+    )
+    motif_parser.add_argument("--grain", type=float, default=0.08, help="grain amount, 0 to 1")
+    motif_parser.add_argument(
+        "--misregister", type=int, default=1, help="RGB plate offset in pixels"
+    )
+    motif_parser.add_argument("--out", type=Path)
+    motif_parser.add_argument("--keep-raw", action="store_true")
+
+    stylize_parser = sub.add_parser(
+        "stylize", help="apply palette and press texture to an existing image"
+    )
+    stylize_parser.add_argument("input", type=Path)
+    stylize_parser.add_argument("--palette", default="egypt-cobalt")
+    stylize_parser.add_argument("--seed", type=int, help="defaults to random; recorded either way")
+    stylize_parser.add_argument(
+        "--palette-mode", choices=post.PALETTE_MODES, default="luma"
+    )
+    stylize_parser.add_argument("--grain", type=float, default=0.08)
+    stylize_parser.add_argument("--misregister", type=int, default=1)
+    stylize_parser.add_argument("--out", type=Path)
 
     sub.add_parser("styles", help="list style presets")
+    sub.add_parser("motifs", help="list procedural motif renderers")
+    sub.add_parser("palettes", help="list palettes")
     return parser
 
 
@@ -252,17 +409,53 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(name)
         return 0
 
+    if args.command == "motifs":
+        for name in motif.available_motifs():
+            print(name)
+        return 0
+
+    if args.command == "palettes":
+        for name in post.available_palettes():
+            print(name)
+        return 0
+
     try:
-        out = generate(
-            args.prompt,
-            args.style,
-            aspect=args.ar,
-            seed=args.seed,
-            host=args.host,
-            out=args.out,
-            keep_raw=args.keep_raw,
-        )
-    except (ComfyError, FileNotFoundError, ValueError) as exc:
+        if args.command == "gen":
+            if args.show_prompt:
+                print(resolved_prompt(args.prompt, load_style(args.style)))
+                return 0
+            out = generate(
+                args.prompt,
+                args.style,
+                aspect=args.ar,
+                seed=args.seed,
+                host=args.host,
+                out=args.out,
+                keep_raw=args.keep_raw,
+            )
+        elif args.command == "motif":
+            out = render_motif(
+                args.motif,
+                palette=args.palette,
+                aspect=args.ar,
+                seed=args.seed,
+                density=args.density,
+                grain=args.grain,
+                misregister=args.misregister,
+                out=args.out,
+                keep_raw=args.keep_raw,
+            )
+        else:
+            out = stylize(
+                args.input,
+                palette=args.palette,
+                seed=args.seed,
+                palette_mode=args.palette_mode,
+                grain=args.grain,
+                misregister=args.misregister,
+                out=args.out,
+            )
+    except (ComfyError, OSError, ValueError) as exc:
         print(f"riso: {exc}", file=sys.stderr)
         return 1
 

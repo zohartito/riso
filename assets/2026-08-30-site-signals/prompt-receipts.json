@@ -1,0 +1,31 @@
+{
+  "generation_route": "OpenAI built-in image generation; no input or reference images",
+  "model_identifier": "not exposed by the built-in tool receipt",
+  "source_boundary": "The linked inspiration was inspected only and was not supplied to image generation.",
+  "items": [
+    {
+      "id": "01-survey-ramp",
+      "raw_file": "raw/01-survey-ramp.png",
+      "raw_sha256": "7e7f63f024ccd0aae1bbe4b394a7330b15f32890b72ff315b7f5635871e634a6",
+      "prompt": "Use case: stylized-concept\nAsset type: raw source for a project-local riso print\nPrimary request: Create a brand-new, original illustration of three small survey crews aligning three mirrored prism tripods along a steep unfinished concrete accessibility ramp.\nScene/backdrop: An abstract construction site with no identifiable landmark.\nSubject: Exactly three separate mirrored prism tripods, plain marker flags, a few coiled cables, and an unfinished concrete ramp; three small crews are distributed along the ramp and remain small relative to the structure. Use simple solid-color workwear without reflective bands, stripes, checks, or other patterns. Prism equipment must be plain mirrored circular or faceted forms without target-board graphics.\nStyle/medium: Tactile architectural material collage with rough concrete, textile flags, metal, broad irregular pigment patches, and hand-cut paper edges; an original visual language.\nComposition/framing: 2:3 portrait orientation, low side view. Equipment and ramp fill the frame, with a strong central silhouette and angular clusters.\nColor palette: Safety orange, signal violet, deep construction ink, and warm paper.\nConstraints: No text, no logos, no watermark. Absolutely no stripes, bands, checks, grids, target-board patterns, or animal patterns on any surface, garment, or object. No pyramids, desert, or mountains. No copied composition. Do not include extra narrative objects."
+    },
+    {
+      "id": "02-facade-cassettes",
+      "raw_file": "raw/02-facade-cassettes.png",
+      "raw_sha256": "32fccba71d28ab39f425ed19e48bfef8655335d7c1f6fb97bd2778738e3d246b",
+      "prompt": "Use case: stylized-concept\nAsset type: raw source for a project-local riso print\nPrimary request: stacked prefabricated facade cassettes resting on timber trestles in a fabrication hall\nScene/backdrop: abstract fabrication hall with no identifiable brand or location\nSubject: a dense field of rectangular facade cassettes, timber trestles, oversized irregular inspection patches, and circular registration marks; no people\nStyle/medium: tactile architectural material collage with rough panel surfaces, timber, broad irregular pigment patches, and hand-cut paper edges; an original visual language\nComposition/framing: 2:3 portrait orientation, compressed frontal view, dense edge-to-edge arrangement, strong graphic silhouette\nColor palette: safety orange, signal violet, deep construction ink, warm paper\nConstraints: no text, no logos, no watermark, no stripes, no animal patterns, no pyramids, no desert, no mountains, no copied composition, no extra objects"
+    },
+    {
+      "id": "03-wind-scaffold",
+      "raw_file": "raw/03-wind-scaffold.png",
+      "raw_sha256": "713c5e655a6b66b3d01142236347b4f840520995b44c7b5381d82e547a4b51bf",
+      "prompt": "Use case: stylized-concept\nAsset type: raw source for a project-local riso print\nPrimary request: Create a brand-new, original image of a temporary scaffold tower wrapped in loose wind-testing ribbons and perforated safety mesh.\nInput images: none. Do not use or imitate any reference image or artist.\nScene/backdrop: Minimal saturated color field with no identifiable location.\nSubject: One temporary scaffold tower with clearly legible diagonal braces, sheets of perforated safety mesh, and loose wind-testing ribbons pulled strongly toward one side; no people.\nStyle/medium: Tactile architectural material collage using the visual qualities of metal, mesh, textile, broad irregular pigment patches, and hand-cut paper edges; an original visual language.\nComposition/framing: 2:3 portrait, viewed upward from the base. The tower and fabric fill the frame. Strong vertical silhouette and unmistakable one-direction wind motion.\nColor palette: Safety orange, signal violet, deep construction ink, and warm paper.\nConstraints: No text, no logos, no watermark, no regular stripes, no animal patterns, no pyramids, no desert, no mountains, no copied composition, and no extra objects."
+    },
+    {
+      "id": "04-weather-array",
+      "raw_file": "raw/04-weather-array.png",
+      "raw_sha256": "0257ab19ccc3d96323cbc892a81baf401048eb1309638a98fb91cfa8f93a2216",
+      "prompt": "Use case: stylized-concept\nAsset type: raw source for a project-local riso print\nPrimary request: a compact weather station seen from a high oblique angle\nScene/backdrop: an abstract neutral field-station surface with no desert landmark\nSubject: tilted solar panels, sensor masts, instrument boxes, and removable protective covers creating repeated color patches; no people\nStyle/medium: tactile architectural material collage made from metal, rough instrument housings, textile covers, broad irregular pigment patches, and hand-cut paper edges; an original visual language\nComposition/framing: 2:3 portrait, high oblique view, equipment arranged in a tight calibrated field filling the frame, with strong repeated geometric silhouettes\nColor palette: safety orange, signal violet, deep construction ink, and warm paper\nConstraints: no text, no logos, no watermark, no stripes, no animal patterns, no pyramids, no desert, no mountains, no copied composition, no extra objects"
+    }
+  ]
+}

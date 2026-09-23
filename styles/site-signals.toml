@@ -1,0 +1,25 @@
+# site-signals — prompt-driven architectural material studies. The prompt owns
+# every subject and compositional choice; this preset adds only generic medium,
+# palette, and print mechanics through a locally generated abstract reference.
+
+name = "site-signals"
+description = "Architectural field equipment as tactile orange, violet, ink, and paper prints."
+
+[generate]
+ref = "refs/style-site-signals-abstract.png"
+strength = 0.08
+steps = 4
+crop_keep = 0.82
+
+# Medium only: no artists, locations, recognizable subjects, or borrowed motif.
+prompt_suffix = ", tactile architectural material collage translated into a limited-palette riso print, rough concrete textile and metal surfaces, broad irregular pigment patches, hand-cut paper edges, strong graphic silhouette, saturated flat field, no contour outlines, no gradients, no photorealistic lighting, no text"
+
+[post]
+palette = "signal-violet"
+palette_mode = "luma"
+
+[post.misregister]
+px = 1
+
+[post.grain]
+amount = 0.09

@@ -1,0 +1,19 @@
+{
+  "generator": "riso.motif",
+  "motif": "mosaic",
+  "palette": "signal-violet",
+  "seed": 117,
+  "density": 2.4,
+  "size": [
+    832,
+    1280
+  ],
+  "post": {
+    "grain": {
+      "amount": 0.0,
+      "seed": 117,
+      "scale": 2
+    }
+  },
+  "licence": "procedural renderer; no external model or adapter"
+}

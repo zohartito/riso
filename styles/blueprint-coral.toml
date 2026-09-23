@@ -1,0 +1,26 @@
+# blueprint-coral — a prompt-driven architectural print preset. The user's
+# prompt owns the subject, viewpoint, objects, and composition. This preset
+# contributes only a locally made abstract reference and print mechanics.
+
+name = "blueprint-coral"
+description = "Original prompt-authored subjects as navy, coral, and aqua architectural prints."
+
+[generate]
+ref = "refs/style-blueprint-coral-abstract.png"
+strength = 0.08
+steps = 4
+crop_keep = 0.78
+
+# Medium only. No artist, place, person, recognizable motif, or compositional
+# instruction belongs here.
+prompt_suffix = ", limited-palette architectural block print made from bold matte cut-paper shapes, solid overlapping ink fields, forms defined by colour adjacency, crisp silhouettes, subtle screen-print texture, no outlines, no gradients, no photorealistic lighting, no text"
+
+[post]
+palette = "blueprint-coral"
+palette_mode = "luma"
+
+[post.misregister]
+px = 1
+
+[post.grain]
+amount = 0.08

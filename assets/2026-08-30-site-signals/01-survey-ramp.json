@@ -1,0 +1,24 @@
+{
+  "generator": "riso.stylize",
+  "source": "assets/2026-08-30-site-signals/raw/01-survey-ramp.png",
+  "source_sha256": "7e7f63f024ccd0aae1bbe4b394a7330b15f32890b72ff315b7f5635871e634a6",
+  "palette": "signal-violet",
+  "seed": 511,
+  "size": [
+    1024,
+    1536
+  ],
+  "post": {
+    "palette": "signal-violet",
+    "palette_mode": "luma",
+    "grain": {
+      "amount": 0.09,
+      "seed": 511,
+      "scale": 2
+    },
+    "misregister": {
+      "px": 1
+    }
+  },
+  "licence": "post-processing only; source-image rights still apply"
+}

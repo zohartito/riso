@@ -1,0 +1,9 @@
+{
+  "generator": "OpenAI built-in image generation tool",
+  "exact_model": "not exposed by the built-in tool",
+  "role": "visual calibration target only; not consumed by riso.motif or Redux",
+  "source_reference": "https://x.com/gizakdag/status/2094027774134554666",
+  "source_images": "four temporary reference images from the linked post; not copied into this folder",
+  "prompt": "Use case: stylized-concept\nAsset type: calibration target for a local procedural print-illustration system\nPrimary request: create one original, object-free portrait-format abstract print reference that captures only the broad production qualities of the supplied images, not their compositions or motifs\nStyle/medium: flat two-ink block print on warm paper; large adjacent matte paper-like shapes; uniform coarse pigment tooth; subtle handmade edge irregularity; no modeled lighting, no gradients, no outlines\nComposition/framing: dense all-over arrangement of irregular interlocking rounded and angular regions, balanced across a 2:3 portrait page with a narrow paper margin; no central icon or focal object\nColor palette: deep cobalt blue ink, warm sand ink, off-white paper only\nConstraints: entirely original; no people, no pyramids, no sarcophagus, no moon, no water, no radiating rays, no repeated stripes, no text, no lettering, no symbols, no recognizable objects; avoid copying any supplied composition; suitable only as an object-free texture and edge-quality calibration target",
+  "sha256": "b40c3581688c57014171ee7f4b243a488e12c8adfecaea03977dcd8a2a28865f"
+}
