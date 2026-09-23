@@ -11,7 +11,7 @@ Full spec and phase gates: `docs/BRIEF.md`.
 
 - Python **3.13.13** in the PC/WSL venv at `.venv` (an earlier note here said
   3.11 — wrong). Activate: `source .venv/bin/activate`. Keep syntax 3.11-safe:
-  the Mac venv has not been checked from this box.
+  the Mac venv is Python 3.11.7 (full suite passed there 2026-09-22).
 - Deps: numpy, pillow, requests, pytest. Justify anything else before adding it.
 - `tomllib` is stdlib from 3.11 on — do not add a TOML dependency.
 - `argparse` is stdlib — do not add click/typer.
@@ -20,8 +20,9 @@ Full spec and phase gates: `docs/BRIEF.md`.
 
 ## Generation box
 
-- Primary: PC `desktop-zt` over Tailscale, RTX 4070 Ti SUPER **16 GB**.
-  ComfyUI in WSL at `~/code/comfyui` and `~/comfy/ComfyUI`.
+- Primary: PC `desktop-zt` over Tailscale — RTX A6000 **48 GB** (primary since
+  the 2026-08 rebuild) plus RTX 4070 Ti SUPER **16 GB** (verified via
+  `nvidia-smi` 2026-09-22). ComfyUI in WSL at `~/code/comfyui` and `~/comfy/ComfyUI`.
 - Fallback: Mac `~/comfyui-mac`.
 - Weights already pulled — **do not re-download**: `flux-krea-dev`,
   `flux1-schnell-fp8`, `flux_text_encoders`.
