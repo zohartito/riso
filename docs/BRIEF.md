@@ -463,9 +463,18 @@ gradients, opacity, filters and embedded rasters, `lock_palette` snaps every
 paint (attributes, inline styles, `<style>` sheets, the unset-black default) to
 the palette, and anything unreadable fails the run instead of passing.
 
-**Build gate passed (2026-09-22):** 158 tests; a Codex (gpt-5.6-sol) review's
-findings — colours escaping the lock, a crash ending a bake-off, a key echoed in
-an error — each fixed and pinned by a test.
+**Build gate passed (2026-09-22):** 171 tests; two Codex (gpt-5.6-sol) reviews'
+findings — colours escaping the lock (CSS sheets and comments, blend modes,
+masks, animation, dangling and external references), a crash ending a bake-off,
+a key echoed in an error, non-atomic output writes, unusable canvases — each
+fixed and pinned by a test; mutation checks confirm the tests fail without them.
+
+Known limits, accepted for a single-user tool: the CSS handling is pattern-based,
+not a CSS engine, so the SVG deliverable is locked for what models write, not for
+input built to evade it — the proof PNG is always on-palette because the raster
+post-pass re-locks it. Engine CLIs run as Zohar and could read
+`~/.config/vercel/env`; they are his own tools, so the key is only withheld from
+their environment, not from the filesystem.
 
 First live bake-off, one subject (`blueprint-coral`, 2:3, seed 304):
 

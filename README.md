@@ -119,7 +119,7 @@ palette after generation (`--svg-mode nearest` by default, `luma` to separate by
 lightness like the raster lanes). Scripts, `foreignObject` and event handlers are
 stripped. No engine is seedable, so `--from-svg` is how an image is re-run.
 
-Needs `pip install -e .[vector]` for `trace`, and the `resvg` binary for the
+Needs `pip install -e ".[vector]"` for `trace`, and the `resvg` binary for the
 proof PNG (`brew install resvg`). Arrow output is non-commercial on QuiverAI's
 free tier; OmniSVG weights are Apache-2.0 but trained on CC BY-NC-SA data.
 

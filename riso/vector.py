@@ -25,6 +25,7 @@ sheets to the palette. Anything it cannot resolve is an error, not a pass.
 from __future__ import annotations
 
 import base64
+import math
 import os
 import re
 import shutil
@@ -207,9 +208,9 @@ def redact(text: str) -> str:
     """Remove the gateway key from any text headed for a console or a file."""
     try:
         key = gateway_key()
-    except VectorError:
+    except Exception:  # no key, or an unreadable key file: nothing to redact
         return text
-    return text.replace(key, "***") if len(key) >= 8 else text
+    return text.replace(key, "***") if key else text
 
 
 def _child_env() -> Dict[str, str]:
@@ -242,7 +243,7 @@ def _call_gateway(engine: Engine, prompt: str, ref: Optional[Path], timeout: int
     )
     body = response.text.replace(key, "***")
     if response.status_code != 200:
-        raise VectorError(f"{engine.name}: gateway HTTP {response.status_code}: {body[:300]}")
+        raise VectorError(f"{engine.name}: gateway HTTP {response.status_code}: {body[:300]}", reply=body)
     try:
         payload = response.json()
         text = payload["choices"][0]["message"]["content"]
@@ -267,11 +268,14 @@ def _run(argv: List[str], label: str, timeout: int, cwd: Optional[str] = None) -
             stdin=subprocess.DEVNULL, timeout=timeout, env=_child_env(),
         )
     except subprocess.TimeoutExpired as exc:
-        raise VectorError(f"{label}: timed out after {timeout}s", reply=_as_text(exc.stdout)) from exc
+        raise VectorError(
+            f"{label}: timed out after {timeout}s",
+            reply=f"{_as_text(exc.stdout)}\n--- stderr ---\n{redact(_as_text(exc.stderr))}",
+        ) from exc
     if result.returncode != 0:
         raise VectorError(
             f"{label}: exit {result.returncode}: {redact(result.stderr.strip()[-300:])}",
-            reply=result.stdout,
+            reply=f"{result.stdout}\n--- stderr ---\n{redact(result.stderr)}",
         )
     return result
 
@@ -316,7 +320,7 @@ def trace_raster(source: Path, colors: Sequence[RGB], mode: str) -> str:
     try:
         import vtracer
     except ImportError as exc:  # optional dependency — only this engine needs it
-        raise VectorError("trace: install the optional dependency with `pip install -e .[vector]`") from exc
+        raise VectorError("trace: install the optional dependency with `pip install -e '.[vector]'`") from exc
     with Image.open(source) as opened:
         plates = post.palette_lock(opened.convert("RGB"), colors, mode)
     with tempfile.SpooledTemporaryFile() as buffer:
@@ -384,7 +388,43 @@ def parse_svg(svg: str) -> ET.Element:
         stack.extend((child, level + 1) for child in element)
     if depth > MAX_DEPTH:
         raise VectorError(f"SVG nests {depth} levels deep; the cap is {MAX_DEPTH}")
+    _check_canvas(root)
     return root
+
+
+# A drawing wider or taller than this is not an illustration; it is a raster
+# the size of a building.
+MAX_ASPECT = 10.0
+
+
+def _check_canvas(root: ET.Element) -> None:
+    """Refuse a canvas resvg would silently replace with a 200×200 default."""
+    sides = []
+    if "viewBox" in root.attrib:
+        parts = re.split(r"[\s,]+", root.attrib["viewBox"].strip())
+        try:
+            numbers = [float(p) for p in parts]
+        except ValueError:
+            numbers = []
+        if len(numbers) != 4 or not all(math.isfinite(n) for n in numbers):
+            raise VectorError(f"unusable viewBox {root.attrib['viewBox']!r}")
+        sides = numbers[2:]
+    else:
+        for name in ("width", "height"):
+            match = re.fullmatch(r"\s*([0-9.eE+-]+)\s*([a-z]{0,2})\s*", root.attrib.get(name, ""))
+            if match:
+                try:
+                    sides.append(float(match.group(1)))
+                except ValueError:
+                    raise VectorError(f"unusable {name} {root.attrib[name]!r}")
+            elif name in root.attrib and not root.attrib[name].strip().endswith("%"):
+                raise VectorError(f"unusable {name} {root.attrib[name]!r}")
+    if len(sides) == 2:
+        width, height = sides
+        if not (math.isfinite(width) and math.isfinite(height)) or width <= 0 or height <= 0:
+            raise VectorError(f"canvas {width}×{height} has no area")
+        if max(width / height, height / width) > MAX_ASPECT:
+            raise VectorError(f"canvas {width}×{height} is more than {MAX_ASPECT:g}:1")
 
 
 def extract_svg(text: str) -> str:
@@ -430,7 +470,13 @@ def serialize(root: ET.Element) -> str:
 # flattening: the drawing becomes flat plates and nothing else
 # --------------------------------------------------------------------------
 
-_DROP_TAGS = {"script", "foreignObject", "iframe", "image", "filter", "feImage", "audio", "video"}
+_DROP_TAGS = {
+    "script", "foreignObject", "iframe", "image", "filter", "feImage", "audio", "video", "mask",
+    "animate", "animateColor", "animateMotion", "animateTransform", "set",
+}
+# Properties that blend inks into colours no screen holds.
+_BLEND_PROPS = ("filter", "mask", "mix-blend-mode")
+_CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _OPACITY_PROPS = ("opacity", "fill-opacity", "stroke-opacity", "stop-opacity", "flood-opacity")
 _HREF_ATTRS = ("href", f"{{{XLINK_NS}}}href")
 _URL = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)['\"]?\s*\)")
@@ -499,6 +545,9 @@ def flatten(root: ET.Element) -> dict:
         if match and match.group(1) in gradients:
             counts["gradients_flattened"] += 1
             return gradients[match.group(1)] or "none"
+        if match and match.group(1) not in by_id:
+            # A reference to nothing paints its fallback, or nothing at all.
+            return value[match.end():].strip() or "none"
         return value
 
     for element in list(root.iter()):
@@ -516,10 +565,12 @@ def flatten(root: ET.Element) -> dict:
                 counts["dropped_elements"] += 1
                 continue
 
+        if "style" in element.attrib:
+            element.attrib["style"] = _CSS_COMMENT.sub("", element.attrib["style"])
         for name in list(element.attrib):
             local = _local(name).lower()
-            if local.startswith("on") or local in ("filter",) or (
-                local == "href" and tag in ("a",) and not element.attrib[name].startswith("#")
+            if local.startswith("on") or local in _BLEND_PROPS or (
+                local == "href" and not element.attrib[name].strip().startswith("#")
             ):
                 del element.attrib[name]
                 counts["dropped_attributes"] += 1
@@ -531,18 +582,21 @@ def flatten(root: ET.Element) -> dict:
                 element.attrib[name] = swap_gradient(element.attrib[name])
 
         if "style" in element.attrib:
-            kept = []
+            kept, hidden = [], []
             for prop, value in _style_items(element.attrib["style"]):
-                if prop == "filter" or prop in _OPACITY_PROPS:
+                if prop in _BLEND_PROPS or prop in _OPACITY_PROPS:
                     counts["dropped_attributes"] += 1
                     if prop in _OPACITY_PROPS:
                         _apply_zero_opacity(element, prop, value, parent_of, counts)
+                        if _is_zero(value) and prop in ("fill-opacity", "stroke-opacity"):
+                            hidden.append(prop.split("-")[0])
                     continue
                 kept.append((prop, swap_gradient(value) if prop in ("fill", "stroke") else value))
-            _set_style(element, kept)
+            # Inline style outranks the attribute _apply_zero_opacity set.
+            _set_style(element, [(p, "none" if p in hidden else v) for p, v in kept])
 
         if tag == "style" and element.text:
-            element.text = _flatten_css(element.text, swap_gradient, counts)
+            element.text = _flatten_css(_CSS_COMMENT.sub("", element.text), swap_gradient, counts)
     return counts
 
 
@@ -563,11 +617,11 @@ _CSS_DECL = re.compile(r"([\w-]+)\s*:\s*([^;{}]+?)\s*(!important)?\s*(?=;|})")
 
 
 def _flatten_css(css: str, swap_gradient: Callable[[str], str], counts: dict) -> str:
-    css = re.sub(r"@import[^;]*;", "", css)
+    css = re.sub(r"@import[^;]*;?", "", css, flags=re.I)
 
     def rewrite(match: re.Match) -> str:
         prop, value, important = match.group(1).lower(), match.group(2), match.group(3) or ""
-        if prop == "filter" or prop in _OPACITY_PROPS:
+        if prop in _BLEND_PROPS or prop in _OPACITY_PROPS:
             counts["dropped_attributes"] += 1
             return ""
         if prop in ("fill", "stroke"):
@@ -737,7 +791,7 @@ def rasterize(svg_path: Path, png_path: Path, width: int, paper: RGB) -> Tuple[i
         raise VectorError("resvg is not installed — `brew install resvg` (Mac) or `cargo install resvg`")
     result = subprocess.run(
         [binary, "--width", str(width), "--background", _hex(paper), str(svg_path), str(png_path)],
-        capture_output=True, text=True, stdin=subprocess.DEVNULL,
+        capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=120,
     )
     if result.returncode != 0:
         raise VectorError(f"resvg failed: {result.stderr.strip()[-300:]}")

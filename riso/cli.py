@@ -16,6 +16,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import random
 import re
 import sys
@@ -334,6 +335,29 @@ def stylize(
     return out
 
 
+def _publish(files: dict) -> None:
+    """Write a run's files all together or not at all.
+
+    Each file is staged beside its target, then renamed into place, so a
+    failure part-way never leaves a new SVG next to an old proof.
+    """
+    staged = []
+    try:
+        for target, content in files.items():
+            temp = target.with_name(f".{target.name}.tmp")
+            if isinstance(content, Image.Image):
+                content.save(temp, format="PNG")
+            else:
+                temp.write_text(content, encoding="utf-8")
+            staged.append((temp, target))
+    except BaseException:
+        for temp, _ in staged:
+            temp.unlink(missing_ok=True)
+        raise
+    for temp, target in staged:
+        os.replace(temp, target)
+
+
 def render_vector(
     prompt: str,
     style_name: str,
@@ -360,6 +384,10 @@ def render_vector(
     if seed is None:
         seed = random.randrange(2**31)
 
+    if from_svg is not None and from_image is not None:
+        raise ValueError("choose one of --from-svg and --from-image")
+    # One run per engine: the same name twice would write the same files.
+    engines = list(dict.fromkeys(engines))
     if from_svg is not None:
         engines = ["from-svg"]
     elif from_image is not None:
@@ -400,6 +428,7 @@ def render_vector(
                 except vector.VectorError as exc:
                     text = exc.reply
                     raise
+            text = vector.redact(text) if isinstance(text, str) else text
             raw_svg = vector.extract_svg(text)
             root = vector.parse_svg(raw_svg)
             flattened = vector.flatten(root)
@@ -422,12 +451,7 @@ def render_vector(
                     file=sys.stderr,
                 )
 
-            # Nothing is written until every step above has succeeded, so a
-            # failed re-run never leaves new SVGs beside an old proof.
-            (out_dir / f"{stem}-raw.svg").write_text(raw_svg, encoding="utf-8")
-            (out_dir / f"{stem}.svg").write_text(locked_svg, encoding="utf-8")
             png_path = out_dir / f"{stem}.png"
-            art.save(png_path)
             sidecar = {
                 "generator": "riso.vector",
                 "engine": name,
@@ -454,7 +478,14 @@ def render_vector(
                 "post": preset,
                 "licence": engine.licence if engine else "re-post of an existing SVG; its engine's licence applies",
             }
-            png_path.with_suffix(".json").write_text(json.dumps(sidecar, indent=2) + "\n", encoding="utf-8")
+            _publish(
+                {
+                    out_dir / f"{stem}-raw.svg": raw_svg,
+                    out_dir / f"{stem}.svg": locked_svg,
+                    png_path: art,
+                    png_path.with_suffix(".json"): vector.redact(json.dumps(sidecar, indent=2)) + "\n",
+                }
+            )
             written.append(png_path)
             sheet_entries.append((name, png_path))
             record.update(
@@ -466,10 +497,13 @@ def render_vector(
             detail = str(exc) if isinstance(exc, vector.VectorError) else f"{type(exc).__name__}: {exc}"
             message = vector.redact(detail)
             print(f"riso: {name}: {message}", file=sys.stderr)
-            if text and from_svg is None:
+            if isinstance(text, str) and text and from_svg is None:
                 # The reply cost a model call; keep it so it can be inspected
                 # or hand-repaired and re-run with --from-svg.
-                (out_dir / f"{stem}-reply.txt").write_text(vector.redact(text), encoding="utf-8")
+                try:
+                    (out_dir / f"{stem}-reply.txt").write_text(vector.redact(text), encoding="utf-8")
+                except OSError as write_error:
+                    print(f"riso: {name}: could not keep the reply: {write_error}", file=sys.stderr)
             sheet_entries.append((f"{name} (failed)", None))
             record.update(ok=False, error=message[:300])
         bench.append(record)
@@ -645,7 +679,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 out=args.out,
             )
     except (ComfyError, vector.VectorError, OSError, ValueError) as exc:
-        print(f"riso: {exc}", file=sys.stderr)
+        print(f"riso: {vector.redact(str(exc))}", file=sys.stderr)
         return 1
 
     print(out)

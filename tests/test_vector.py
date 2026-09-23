@@ -31,6 +31,25 @@ SAMPLE = (
     "</svg>"
 )
 
+# Second review's cases: comment-split CSS, blend modes, masks, animation,
+# dangling and external references, style-level zero opacity.
+TRICKY = (
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">'
+    "<style>@IMPORT url(https://example.invalid/x.css); .x{color/**/:red;opacity/**/:.5}</style>"
+    '<pattern id="p" xlink:href="https://example.invalid/p.svg#q"/>'
+    '<mask id="m"><rect width="100" height="100" fill="#F4EBDD"/></mask>'
+    '<rect width="100" height="100" fill="#F4EBDD"/>'
+    '<rect class="x" fill="currentColor" width="50" height="50"/>'
+    '<rect x="50" width="50" height="50" fill="#F25F5C"/>'
+    '<rect x="50" width="50" height="50" fill="#4DB6AC" style="mix-blend-mode:multiply"/>'
+    '<rect y="50" width="50" height="50" fill="#F25F5C" mask="url(#m)"/>'
+    '<rect x="50" y="50" width="50" height="50" fill="url(#missing)"/>'
+    '<rect x="60" y="60" width="10" height="10" style="fill:red;fill-opacity:0"/>'
+    '<rect x="70" y="70" width="10" height="10" fill="#15324B">'
+    '<animate attributeName="fill" values="red;blue" dur="1s"/></rect>'
+    "</svg>"
+)
+
 # Everything a model has been seen to emit, in one drawing.
 MESSY = (
     '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
@@ -185,15 +204,36 @@ def test_serialized_svg_has_no_ns0_prefix():
 
 
 @NEEDS_RESVG
-def test_locked_drawing_renders_only_inks(tmp_path):
+@pytest.mark.parametrize("drawing", [MESSY, TRICKY], ids=["messy", "tricky"])
+def test_locked_drawing_renders_only_inks(tmp_path, drawing):
     """Before grain and misregistration, the proof holds the palette and only it."""
     svg = tmp_path / "locked.svg"
-    svg.write_text(_pipeline(MESSY).replace("<svg ", '<svg shape-rendering="crispEdges" ', 1))
+    svg.write_text(_pipeline(drawing).replace("<svg ", '<svg shape-rendering="crispEdges" ', 1))
     png = tmp_path / "flat.png"
     vector.rasterize(svg, png, 100, PALETTE[-1])
     with Image.open(png) as flat:
         pixels = {tuple(p) for p in np.unique(np.asarray(flat.convert("RGB")).reshape(-1, 3), axis=0)}
     assert pixels <= set(PALETTE), pixels - set(PALETTE)
+
+
+def test_tricky_drawing_loses_every_blend_and_outside_reference():
+    locked = _pipeline(TRICKY)
+    for gone in ("example.invalid", "@IMPORT", "mix-blend-mode", "mask", "animate", "opacity", "#missing", "red"):
+        assert gone not in locked, gone
+    assert 'style="fill:none"' in locked
+
+
+@pytest.mark.parametrize(
+    "canvas",
+    ['viewBox="0 0 NaN 100"', 'viewBox="0 0 0 100"', 'width="inf" height="100"', 'viewBox="0 0 1 100"'],
+)
+def test_a_canvas_resvg_cannot_honour_is_refused(canvas):
+    with pytest.raises(vector.VectorError):
+        vector.parse_svg(f'<svg xmlns="http://www.w3.org/2000/svg" {canvas}/>')
+
+
+def test_a_canvas_with_units_is_accepted():
+    vector.parse_svg('<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm"/>')
 
 
 @NEEDS_RESVG
@@ -274,6 +314,19 @@ def test_gateway_error_never_carries_the_key(monkeypatch):
     assert vector.redact(f"x {key} y") == "x *** y"
 
 
+def test_short_keys_are_redacted_too(monkeypatch):
+    monkeypatch.setenv(vector.GATEWAY_KEY_VAR, "abc1234")
+    assert vector.redact("key=abc1234") == "key=***"
+
+
+def test_gateway_error_body_is_kept_as_the_reply(monkeypatch):
+    monkeypatch.setenv(vector.GATEWAY_KEY_VAR, "k" * 10)
+    monkeypatch.setattr(vector.requests, "post", lambda *a, **k: _Reply(429, {"error": "slow down"}))
+    with pytest.raises(vector.VectorError) as caught:
+        vector.run_engine(vector.ENGINES["arrow-2"], "s", "p")
+    assert "slow down" in caught.value.reply
+
+
 def test_gateway_null_content_is_an_engine_failure(monkeypatch):
     monkeypatch.setenv(vector.GATEWAY_KEY_VAR, "k" * 10)
     monkeypatch.setattr(
@@ -309,7 +362,8 @@ def test_cli_engine_failure_keeps_what_it_printed():
     engine = vector.Engine("fake", "cli", "m", "l", (sys.executable, "-c", "print('<svg/>'); raise SystemExit(7)"))
     with pytest.raises(vector.VectorError) as caught:
         vector.run_engine(engine, "s", "p")
-    assert "exit 7" in str(caught.value) and caught.value.reply.strip() == "<svg/>"
+    assert "exit 7" in str(caught.value)
+    assert caught.value.reply.startswith("<svg/>") and "--- stderr ---" in caught.value.reply
 
 
 def test_trace_needs_a_source():
@@ -412,6 +466,44 @@ def test_a_failed_rerun_does_not_overwrite_earlier_files(tmp_path, monkeypatch):
         cli.render_vector("a crane", "blueprint-coral", ["claude"], seed=8, out_dir=tmp_path)
     assert stem.with_suffix(".svg").read_text() == "old"
     assert not (tmp_path / "vector-blueprint-coral-claude-a-crane-8-raw.svg").exists()
+
+
+def test_publish_writes_all_files_or_none(tmp_path):
+    first, second = tmp_path / "a.svg", tmp_path / "b.json"
+    first.write_text("old")
+    with pytest.raises(TypeError):
+        cli._publish({first: "new", second: object()})
+    assert first.read_text() == "old" and not second.exists()
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_a_reply_that_cannot_be_saved_does_not_stop_the_bake_off(tmp_path, monkeypatch):
+    (tmp_path / "vector-blueprint-coral-claude-a-crane-9-reply.txt").mkdir()
+
+    def fake(engine, *args, **kwargs):
+        if engine.name == "claude":
+            return "no drawing here", {}
+        raise vector.VectorError("second engine reached")
+
+    monkeypatch.setattr(vector, "run_engine", fake)
+    with pytest.raises(vector.VectorError, match="no engine"):
+        cli.render_vector("a crane", "blueprint-coral", ["claude", "codex"], seed=9, out_dir=tmp_path)
+    bench = json.loads(next(tmp_path.glob("vector-bench-*.json")).read_text())
+    assert bench["results"][1]["error"] == "second engine reached"
+
+
+@NEEDS_RESVG
+def test_the_same_engine_twice_runs_once(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(vector, "run_engine", lambda engine, *a, **k: (calls.append(engine.name), (SAMPLE, {}))[1])
+    cli.render_vector("a crane", "blueprint-coral", ["claude", "claude"], seed=10, out_dir=tmp_path)
+    assert calls == ["claude"]
+
+
+def test_from_svg_and_from_image_together_is_an_error(tmp_path):
+    with pytest.raises(ValueError, match="choose one"):
+        cli.render_vector("", "blueprint-coral", ["claude"], out_dir=tmp_path,
+                          from_svg=tmp_path / "a.svg", from_image=tmp_path / "b.png")
 
 
 @NEEDS_RESVG
