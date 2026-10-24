@@ -1,5 +1,5 @@
 # pinned to what was installed 2026-08-15 on Python 3.11.7
 numpy==2.4.6
-pillow==12.3.0
+pillow==13.0.0
 requests==2.34.2
 pytest==9.1.1
