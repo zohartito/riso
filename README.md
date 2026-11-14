@@ -143,3 +143,8 @@ does not launder that — any image made through the style-reference workflow
 inherits the adapter's restriction, even though schnell itself is unrestricted.
 Post-pass-only output (Phase 1, no Redux) stays fully Apache-2.0. Worth knowing
 before anything from here is used commercially.
+
+No model weights are included in this repository. The style-reference workflow
+uses `flux1-redux-dev`, whose weights are non-commercial; download it and the
+other models yourself under their own licences. The code here is MIT (see
+[`LICENSE`](LICENSE)).

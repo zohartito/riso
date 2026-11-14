@@ -10,9 +10,9 @@ Probed from the Mac before the repo was scaffolded:
 
 | check | result |
 |---|---|
-| `desktop-zt` on Tailscale | **online**, `100.65.251.41`, direct, active |
-| `desktop-zt:8188` (ComfyUI) | **closed / refused** — host reachable, nothing listening |
-| `desktop-zt:8000` | open (something else; not identified) |
+| `gpu-pc` on Tailscale | **online**, `<tailscale-ip>`, direct, active |
+| `gpu-pc:8188` (ComfyUI) | **closed / refused** — host reachable, nothing listening |
+| `gpu-pc:8000` | open (something else; not identified) |
 | Mac `127.0.0.1:8188` | no response |
 | launchd `com.zohar.comfyui-mac-krea` | loaded, `RunAtLoad=false`, no PID — never started |
 
@@ -20,13 +20,13 @@ Probed from the Mac before the repo was scaffolded:
 The plist runs:
 
 ```
-/Users/zohartito/code/zohar-infra/mac/flux-krea-dev/run-comfyui-krea.sh   <- does not exist
+~/code/zohar-infra/mac/flux-krea-dev/run-comfyui-krea.sh   <- does not exist
 ```
 
 The script actually lives at:
 
 ```
-/Users/zohartito/projects/_local-only/zohar-infra-files--code/mac/flux-krea-dev/run-comfyui-krea.sh
+~/projects/_local-only/zohar-infra-files--code/mac/flux-krea-dev/run-comfyui-krea.sh
 ```
 
 It was swept into `_local-only` during the 2026-07-30 consolidation and the plist
@@ -91,7 +91,7 @@ to the subject, because the space it does not occupy is never neutral.
 
 ## Existing assets — do not re-clone or re-download
 
-- ComfyUI on the PC (Tailscale host `desktop-zt`, RTX 4070 Ti SUPER 16 GB):
+- ComfyUI on the PC (Tailscale host `gpu-pc`, RTX 4070 Ti SUPER 16 GB):
   WSL at `~/code/comfyui` and `~/comfy/ComfyUI`
 - ComfyUI on the Mac: `~/comfyui-mac`
 - Weights already pulled: `flux-krea-dev`, `flux1-schnell-fp8`, `flux_text_encoders`
@@ -108,7 +108,7 @@ Each has a gate. Do not start a phase until the previous gate passes.
 
 ### Phase 0 — reachability
 
-Get a ComfyUI instance answering. Prefer the PC (`desktop-zt:8188`); fall back to
+Get a ComfyUI instance answering. Prefer the PC (`gpu-pc:8188`); fall back to
 the Mac only if the PC cannot be fixed in one pass — and say so explicitly rather
 than switching silently. Record what you did in `docs/generation-box.md`.
 

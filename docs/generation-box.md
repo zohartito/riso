@@ -1,11 +1,11 @@
 # Generation box — Phase 0 record
 
-Resolved 2026-08-15 on the **PC** (`desktop-zt`), from inside WSL. No fallback to
+Resolved 2026-08-15 on the **PC** (`gpu-pc`), from inside WSL. No fallback to
 the Mac was needed and none was used.
 
 ## What the Phase 0 finding actually was
 
-The brief recorded `desktop-zt:8188` as **closed / refused**. That probe ran from
+The brief recorded `gpu-pc:8188` as **closed / refused**. That probe ran from
 the Mac, across Tailscale and the WSL2 NAT. From inside WSL the diagnosis is
 simpler and there is no networking fault at all:
 

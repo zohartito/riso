@@ -19,7 +19,7 @@ Full spec and phase gates: `docs/BRIEF.md`.
 
 ## Generation box
 
-- Primary: PC `desktop-zt` over Tailscale, RTX 4070 Ti SUPER **16 GB**.
+- Primary: PC `gpu-pc` over Tailscale, RTX 4070 Ti SUPER **16 GB**.
   ComfyUI in WSL at `~/code/comfyui` and `~/comfy/ComfyUI`.
 - Fallback: Mac `~/comfyui-mac`.
 - Weights already pulled — **do not re-download**: `flux-krea-dev`,
