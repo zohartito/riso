@@ -22,8 +22,8 @@ from riso.resources import ASSET_ROOT
 REPO_ROOT = ASSET_ROOT
 STYLE_DIR = REPO_ROOT / "styles"
 
-# Measured band for Redux strength — see refs/srefs.md. Outside it the node
-# either copies the reference outright or stops carrying style at all.
+# Starting band from the recorded crowd/seed sweep, not a universal limit.
+# See refs/srefs.md for model, prompt and reference scope.
 STRENGTH_BAND = (0.05, 0.15)
 
 Style = Dict[str, Any]

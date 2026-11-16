@@ -72,7 +72,7 @@ The prompt said "flat editorial illustration" and every crowd came back in
 heavy contour lines. A vector-line-art association is an interpretation. Adding "no
 outlines, no linework" moved thin-line coverage from 3.64% to 3.75% — nothing.
 Adding the *same clause* to "cut-paper collage" moved it from 1.79% to 0.94%.
-Change the noun first; the negative only tidies up afterwards. Naming a paper
+Try the medium phrase first in this preset. Naming a paper
 medium instead of an illustration medium took the same measure to 0.31%.
 
 **2. Reference motifs dominated one sparse prompt against four references.**
@@ -190,7 +190,7 @@ seeds 8 / 55 / 21. Measured against the look spec rather than eyeballed:
 | zero gradients except grain | flat areas vary by sd 2.07 levels; grain alone predicts 2.0. The ramp is gone. |
 | 2px tooth | pixel differences inside a grain block 5–6, across a block boundary 21 |
 | 1–2px channel misregistration | R-to-B offset 4px, i.e. ±2px per plate |
-| no outlines | nothing in the chain draws one; forms read by colour adjacency and press fringe |
+| no outlines | the post-pass adds no contour strokes, but can preserve outlines in the generated source; inspect the result |
 | 3–5 flat colours | 5 inks locked, then modulated by grain and halftone as the spec allows |
 
 **Three findings the sheet also produced — Phase 4 material, not shipped:**
@@ -235,9 +235,9 @@ is in the docstring so nobody re-tries it blind.
 **b) New object-free reference — done.** `style-flat-mosaic.png` replaces the
 poster ref. The white circle is gone. Two new rules came out of minting it, both
 in `refs/srefs.md`: a reference contributes any distinctive *object*, and — the
-one that matters more — **a sparse subject renders as the reference, whatever
-the reference is.** Four different refs, same sparse prompt, no subject in any
-of them.
+one that matters more — **one sparse prompt rendered reference motifs against
+all four tested references.** This does not establish failure for every sparse
+prompt or every seed.
 
 **c) Historical run notes: 0 dead and 10 legible crowds out of 10 unhunted
 seeds** on a dense subject; five inks above 1% of frame in 7 of 10. The raw
@@ -285,7 +285,7 @@ The only argument for the planes ref was outlines, and outlines turned out to
 come from the model. On the axis that actually separates them the mosaic wins
 two panels of three. `docs/phase5-planes-sheet.png` is kept as the record.
 
-### Phase 5b — the outlines are fixed, by one phrase
+### Phase 5b — paper wording reduced outlines in the compared frames
 
 `docs/outlines-fixed-by-the-medium-word.png`, and the sheet it produces is
 `docs/phase5-outline-fix-sheet.png`.
@@ -318,8 +318,8 @@ about 50.4% of the area, then rescale*. Dimensions are rounded to pixels:
 an 896×1152 latent frame uses a 636×818 window. A final aspect-ratio crop can
 trim it further before delivery. `post.content_crop` slides a target-sized window
 and keeps the placement holding the most ink boundaries — large flat shapes
-carry none, so the style reference always loses that competition to the
-subject. The upscale afterwards costs nothing visible because `palette_lock`
+carry few. Reference patterns can also have boundaries, so this does not
+identify the subject. In the compared frames, the upscale had no visible cost because `palette_lock`
 re-quantises to flat plates, and grain lands at the delivered size, so the 2px
 tooth stays 2px. `--ar 3:4` still delivers 3:4 at full resolution.
 
@@ -340,10 +340,10 @@ to describe form without outlines or shading, and it needs repeated elements to
 do that — a crowd of caps, a field of waves, a bank of faces. That is what the
 reference material (Ege Berkina, Gizem Akdag) is made of.
 
-A lone figure on an empty court gives the pipeline nothing to work with, and
-the empty space does not stay empty: Redux fills it with the reference. Choose
-subjects that fill the frame with repeated elements. This is a property of the
-aesthetic, not a defect to be fixed.
+The tested lone-player prompt lost its subject, with reference motifs filling
+the frame. Dense repeating subjects are the intended scope of this preset;
+other sparse prompts or seeds have not been proven impossible. Inspect each
+output for subject presence and framing.
 
 ## Deferred — do not build these now
 

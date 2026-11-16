@@ -155,9 +155,8 @@ def generate(
             "`systemctl --user start comfyui` only applies if you installed that unit)"
         )
 
-    # The reference cannot carry flatness and subject clarity at the same
-    # strength — see refs/srefs.md. The preset says "flat" in words too, which
-    # is what lets the strength sit low enough for the subject to survive.
+    # In the recorded crowd tests, a flatness clause helped balance style and
+    # subject at low strength. See refs/srefs.md for the tested settings.
     full_prompt = prompt + settings.get("prompt_suffix", "")
 
     uploaded = comfy.upload_image(settings["ref"])

@@ -72,9 +72,9 @@ For a custom reference, review and copy the image there before using its path
 in a preset. Presets cannot select arbitrary external files for upload.
 Output paths, including their parent directories, must not be symlinks.
 
-`crop_keep` delivers the densest part of the frame at the size you asked for:
-whatever the subject does not fill, the style reference fills with its own
-shapes, so the crop trades that away. ComfyUI generates near one megapixel at
+`crop_keep` selects a window with many ink boundaries. This reduced reference
+shapes around the subject in the recorded examples; it does not recognize the
+subject or guarantee useful framing. ComfyUI generates near one megapixel at
 latent-compatible dimensions; a final crop preserves the exact requested ratio
 before the post-pass. For example, `--ar 3:4` delivers 864×1152 from an 896×1152
 latent frame. The sidecar records both delivered `size` and `latent_size`.
