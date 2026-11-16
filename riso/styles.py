@@ -1,8 +1,8 @@
 """Style presets: reference image + palette + post settings, as TOML data.
 
-A preset is the unit of series consistency — two runs that name the same style
-may differ in subject and seed and in nothing else. Everything a style decides
-lives in ``styles/*.toml``, never in the CLI.
+A preset groups style settings, but its name does not freeze the referenced
+files, workflow, runtime or the CLI's aspect ratio. Hold those fixed as well
+when making a series.
 
 The ``[post]`` table is passed to ``post.compose`` verbatim, so its schema is
 that function's preset schema and nothing here needs to know about halftones.

@@ -35,7 +35,7 @@ riso gen "a crowd of tennis spectators seen from behind" --style tennis --ar 3:4
 
 One command: ComfyUI generation → riso post-pass → a finished PNG in `out/`,
 next to a JSON sidecar recording the prompt, seed, model, adapter and post
-settings that made it. `--seed` to reproduce, `--keep-raw` to also write the
+settings that made it. `--seed` to reuse a noise seed, `--keep-raw` to also write the
 pre-post-pass frame, `riso styles` to list presets.
 
 Default filenames include a unique run ID, so fixed-seed runs remain separate.
@@ -46,7 +46,11 @@ generation starts.
 
 A style preset in `styles/*.toml` is the unit of series consistency — reference
 image, strength, prompt wording, palette, crop and post settings in one file.
-Two runs naming the same style differ in subject and seed and nothing else.
+For a series, hold the preset and its referenced files, workflow, `--ar` and
+generation runtime fixed; the style name alone does not enforce that. Sidecars
+record settings and paths, but do not hash the assets/workflow or capture
+ComfyUI/torch versions. A seed and style name do not guarantee identical
+generation after those inputs change.
 
 Preset names must start with a letter or digit and contain only letters,
 digits, underscores and hyphens. References must decode as images and resolve
@@ -112,7 +116,10 @@ art.save("out/art.png")
 ```
 
 Steps run in a fixed order — `palette_lock → halftone → misregister → grain` —
-and each is optional. Same seed in, byte-identical PNG out. Palettes are data:
+and each is optional. The tests establish byte-identical PNGs for the same
+input pixels, post settings and grain seed in the same library environment;
+this does not promise byte-identical ComfyUI generation or cross-version PNG
+encoding. Palettes are data:
 add a JSON file to `palettes/` rather than hardcoding colours.
 
 **Two palette mappings, because they fail in opposite directions.** `nearest`

@@ -1,12 +1,12 @@
 """``riso gen`` — subject prompt + style preset, one command, one finished PNG.
 
 Chains Phase 2 (ComfyUI style-reference generation) into Phase 1 (the riso
-post-pass). The subject and the seed are the only things that vary between
-runs of a series; everything else comes from ``styles/*.toml``.
+post-pass). Presets hold style settings; callers must also hold aspect ratio,
+referenced assets, workflow and generation runtime fixed across a series.
 
 Every image is written with a JSON sidecar naming the model, adapter, seed and
-post settings that made it — licence travels with the image, and a series that
-cannot be re-run is not a series.
+post settings that made it. It records paths and settings, not immutable asset
+hashes or generation runtime versions.
 """
 
 from __future__ import annotations
