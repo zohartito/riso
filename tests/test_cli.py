@@ -176,3 +176,15 @@ def test_gen_reports_a_dead_comfyui_instead_of_traceback(capsys, monkeypatch):
 def test_styles_subcommand_lists_presets(capsys):
     assert cli.main(["styles"]) == 0
     assert "tennis" in capsys.readouterr().out.split()
+
+
+def test_dead_comfyui_points_to_a_public_launch_command(capsys, monkeypatch):
+    class Down(_StubComfy):
+        def is_up(self):
+            return False
+
+    monkeypatch.setattr(cli, "Comfy", Down)
+    assert cli.main(["gen", "anything", "--style", "tennis"]) == 1
+    error = capsys.readouterr().err
+    assert "python main.py --listen 127.0.0.1 --port 8188" in error
+    assert "docs/generation-box.md" in error

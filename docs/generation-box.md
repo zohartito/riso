@@ -1,4 +1,78 @@
-# Generation box — Phase 0 record
+# ComfyUI prerequisite and generation box record
+
+## Public bootstrap
+
+`riso` does not install or launch ComfyUI. Run both processes in the same
+environment (for WSL, inside the same WSL instance); loopback is the default.
+No systemd unit is required or supplied by this repository.
+
+The historical environment below reports ComfyUI **0.21.1**, Python **3.12.3**,
+and PyTorch **2.12.0+cu130** on a 16 GB NVIDIA GPU. These are recorded versions,
+not established minimum requirements. A clean install and other GPU backends
+have not been validated by this repository. Use the upstream
+[ComfyUI installation instructions](https://github.com/Comfy-Org/ComfyUI#installing)
+for the PyTorch build appropriate to your hardware; do not install the CUDA
+build on a Mac.
+
+For a separate Linux/WSL NVIDIA install matching that recorded runtime:
+
+```bash
+git clone https://github.com/Comfy-Org/ComfyUI.git
+cd ComfyUI
+git checkout v0.21.1
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install torch==2.12.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
+python -m pip install -r requirements.txt
+```
+
+Download the following files from their publishers, review their model cards
+and licences, and place them in this **ComfyUI checkout**, not in `riso`.
+Do not substitute a diffusion-only schnell file for the all-in-one checkpoint:
+the workflow gets CLIP-L, T5 and VAE from `CheckpointLoaderSimple`.
+
+| Workflow node / loader slot | Exact file and destination | Publisher / provenance entry point |
+|---|---|---|
+| `checkpoint` / `ckpt_name` | `models/checkpoints/flux1-schnell-fp8.safetensors` | [Comfy-Org FLUX.1 schnell checkpoint](https://huggingface.co/Comfy-Org/flux1-schnell), repackaged from Black Forest Labs schnell |
+| `redux` / `style_model_name` | `models/style_models/flux1-redux-dev.safetensors` | [Black Forest Labs FLUX.1 Redux dev](https://huggingface.co/black-forest-labs/FLUX.1-Redux-dev) |
+| `clip_vision` / `clip_name` | `models/clip_vision/sigclip_vision_patch14_384.safetensors` | [Comfy-Org SigLIP vision conversion](https://huggingface.co/Comfy-Org/sigclip_vision_384) |
+
+The Phase 0 inventory below predates the Redux downloads. The shipped workflow
+needs **all three** files. It uses stock ComfyUI nodes, with no custom-node pack.
+Weights are not bundled; access or licence acceptance at a publisher is your
+responsibility. The repository has no recorded weight hashes or download
+revisions for the historical runs: these links identify download sources, not
+proof of byte-identical historical weights. Record the revision and SHA-256 of
+your downloads if you need to preserve your environment.
+
+Start ComfyUI in that checkout, with its venv active:
+
+```bash
+python main.py --listen 127.0.0.1 --port 8188
+```
+
+In a second terminal in the same environment:
+
+```bash
+curl --fail http://127.0.0.1:8188/system_stats
+curl --fail http://127.0.0.1:8188/object_info > object-info.json
+```
+
+Check `/system_stats` for the expected Python, ComfyUI, torch and GPU runtime.
+In `object-info.json`, check that every `class_type` in
+`riso/workflows/flux-redux-styleref.json` exists, and that each loader's
+`input.required` options includes its exact filename from the table. A missing
+node indicates an incompatible ComfyUI version; a missing filename indicates
+the wrong model folder or a needed restart. A successful health response alone
+does not establish that generation works.
+
+Finally, activate **riso's** venv in the riso clone and run the README's `riso
+gen` example. Inspect the image for its subject and the JSON sidecar for the
+requested model/settings. Connection refusal means ComfyUI is not listening
+in this environment; node/model validation errors mean the loader checks above
+have not passed. This is a manual generation check, not part of pytest.
+
+## Historical Phase 0 record
 
 Resolved 2026-08-15 on the **PC** (`gpu-pc`), from inside WSL. No fallback to
 the Mac was needed and none was used.

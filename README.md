@@ -21,6 +21,10 @@ python -m pytest -q
 
 ## Generate
 
+Generation requires a separately installed, running **ComfyUI** and three model
+files. Follow the [public bootstrap and health checks](docs/generation-box.md#public-bootstrap)
+first. The post-pass and tests do not require ComfyUI or model weights.
+
 ```bash
 riso gen "a crowd of tennis spectators seen from behind" --style tennis --ar 3:4
 ```

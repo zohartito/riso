@@ -126,8 +126,10 @@ def generate(
     comfy = Comfy(host)
     if not comfy.is_up():
         raise ComfyError(
-            f"no ComfyUI at {host} — start it with `systemctl --user start comfyui` "
-            "from inside WSL on the PC (see docs/generation-box.md)"
+            f"no ComfyUI at {host} — in your ComfyUI checkout, start "
+            "`python main.py --listen 127.0.0.1 --port 8188` "
+            "(see docs/generation-box.md for installation; "
+            "`systemctl --user start comfyui` only applies if you installed that unit)"
         )
 
     # The reference cannot carry flatness and subject clarity at the same
