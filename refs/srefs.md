@@ -216,11 +216,12 @@ In these tests, reference shapes filled regions the subject did not occupy.
 This motivates the diagnostic test below and `crop_keep`; it does not prove
 that all sparse prompts or all seeds must fail.
 
-## The acceptance test — no reference ships without it
+## Dense-subject acceptance and the sparse diagnostic
 
-**Hard rule: a candidate reference is judged on one dense subject and one
-sparse subject before it is allowed into a style preset.** Dense-only testing
-passes references that are unusable, and it will do so confidently.
+**The shipped preset targets dense subjects.** Compare one dense and one sparse
+subject to expose its limits, but sparse success was not a gate the mosaic
+reference passed. The earlier wording requiring both to pass contradicted the
+actual release decision.
 
 Run both through the preset you intend to ship, same seed, changing nothing but
 the subject, and look at the two images:
@@ -228,9 +229,12 @@ the subject, and look at the two images:
 1. **Dense** — a crowd, a bank of faces, a field of repeated elements.
 2. **Sparse** — one figure in open space.
 
-Fail the candidate if the sparse frame shows the reference's own motif, if
-either frame carries outlines (rule 4), or if anything memorable from the
-reference appears in either (rules 1–2).
+For dense-subject use, inspect the dense frame for subject presence, outlines
+and copied motifs (rules 1–4). Record sparse failures as unsupported scope;
+do not describe a dense-only preset as supporting sparse subjects without a
+separate successful evaluation. A conspicuous sparse failure can still be a
+reason to reject a candidate, but passing both was not the rule used to ship
+the current reference.
 
 **The automated check will not catch this.** `riso gen` warns on a featureless
 frame, but the sparse failure below scores a tonal span of 0.326 — far above
@@ -253,8 +257,9 @@ subject changed: **a checkerboard.** The reference's squares, straight through,
 with no tennis player anywhere in the frame. Rejected on the strength of this
 one image, despite the middle panel.
 
-`style-flat-mosaic.png` shipped instead — not because it is clean, but because
-it fails less badly on sparse subjects.
+`style-flat-mosaic.png` shipped for the dense-subject scope. The historical
+judgment was that it failed less badly on sparse subjects; it still failed
+the sparse test, and this is not evidence that it passed a two-subject gate.
 
 ## Historical hit rate notes (2026-08-15)
 
