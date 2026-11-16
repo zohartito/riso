@@ -220,12 +220,11 @@ def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
 
 
 def detail_map(img: Image.Image, palette: Palette, tile: int = 32) -> np.ndarray:
-    """Per-tile density of ink boundaries — where the *subject* is.
+    """Per-tile density of ink boundaries after luma palette mapping.
 
-    A crowd is hundreds of small regions and scores high. A torn-paper plane,
-    a sky, or any large flat shape scores near zero however colourful it is.
-    That distinction is the one that matters here, because the failure being
-    measured is a frame half-filled with handsome abstraction.
+    Many small contrasting regions score high; large flat interiors score
+    low. This measures boundary density, not subject identity: reference
+    patterns can score higher than the intended subject.
     """
     plates = np.asarray(palette_lock(img, palette, "luma"), dtype=np.int32)
     key = plates[..., 0] * 65536 + plates[..., 1] * 256 + plates[..., 2]
@@ -244,17 +243,16 @@ def detail_map(img: Image.Image, palette: Palette, tile: int = 32) -> np.ndarray
 def content_crop(
     img: Image.Image, palette: Palette, size: Tuple[int, int], tile: int = 32
 ) -> Image.Image:
-    """Take the window of exactly ``size`` holding the most subject.
+    """Choose a crop by ink-boundary density on a tile grid.
 
-    The frame is generated larger than it ships and this chooses which part
-    ships: slide a target-sized window, keep the placement with the most ink
-    boundaries in it. Cropping rather than re-prompting is the cheap lever —
-    the subject Flux drew is usually good, it is just sharing the frame with a
-    lot of style reference, and the reference always loses this competition
-    because large flat shapes carry no boundaries.
+    Slide a target-sized window over ``detail_map`` and keep the placement
+    with the highest score. Reference patterns can also carry boundaries,
+    so this does not recognize the subject or guarantee useful framing.
+    Inspect each output for subject presence and framing.
 
-    Exact output size in, exact output size out: ``--ar 3:4`` still delivers
-    3:4 at full resolution, not whatever shape the subject happened to take.
+    A selected crop has exactly ``size`` pixels. If either source dimension
+    is no larger than its target, or the detail map is empty or has no
+    boundaries, return a copy at the source size.
     """
     target_w, target_h = int(size[0]), int(size[1])
     if target_w <= 0 or target_h <= 0:
