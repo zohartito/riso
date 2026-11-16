@@ -299,8 +299,12 @@ def palette_lock(
     pixel can land on the *same* swatch and the image collapses to one field.
 
     ``luma`` ignores source hue and maps lightness bands onto the palette's own
-    lightness order. Form always survives, so it is the mapping a generated
-    frame wants; the cost is that source colour no longer chooses the ink.
+    lightness order. Forms need enough lightness contrast to fall into
+    different bands; equal-lightness colours can merge. Quantization and
+    2nd–98th percentile clipping can discard small details, and a clipped
+    lightness span below ``FLAT_FRAME_SPAN`` maps the whole frame to one ink.
+    Source colour no longer chooses the ink. Inspect hue-defined forms and
+    fine details after mapping.
     """
     colors = [tuple(int(c) for c in entry) for entry in palette]
     if len(colors) < 2:
