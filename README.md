@@ -53,6 +53,9 @@ An explicit `--out` must be new: existing images, sidecars or requested raw
 frames are never implicitly overwritten.
 `--out result` becomes `result.png`; unsupported extensions fail before
 generation starts.
+Sidecars and raw frames include the entire image filename: `art.jpg.json`
+and `art.jpg-raw.png`, for example. Thus `art.jpg` and `art.webp` retain
+independent records and raw frames.
 
 A style preset in `styles/*.toml` is the unit of series consistency — reference
 image, strength, prompt wording, palette, crop and post settings in one file.

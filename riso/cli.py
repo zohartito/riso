@@ -122,8 +122,8 @@ def generate(
     image_format = Image.registered_extensions().get(out.suffix.lower())
     if image_format not in Image.SAVE:
         raise ValueError(f"unsupported output extension: {out.suffix}")
-    sidecar = out.with_suffix(".json")
-    raw_out = out.with_name(f"{out.stem}-raw.png")
+    sidecar = out.with_name(f"{out.name}.json")
+    raw_out = out.with_name(f"{out.name}-raw.png")
     targets = [out, sidecar] + ([raw_out] if keep_raw else [])
     for target in targets:
         if any(part.is_symlink() for part in (target, *target.parents)):

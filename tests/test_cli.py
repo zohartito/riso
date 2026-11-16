@@ -138,9 +138,9 @@ def test_gen_writes_a_finished_png_and_a_sidecar(tmp_path, monkeypatch):
         # --ar 3:4 delivers 3:4 at full size, whatever the crop threw away
         assert art.size == (864, 1152)
         assert art.width * 4 == art.height * 3
-    assert out.with_name("shot-raw.png").is_file()
+    assert out.with_name("shot.png-raw.png").is_file()
 
-    record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    record = json.loads(out.with_name("shot.png.json").read_text(encoding="utf-8"))
     assert record["seed"] == 4242
     assert record["size"] == [864, 1152]
     assert record["latent_size"] == list(cli.dimensions((3, 4)))
@@ -206,7 +206,7 @@ def test_default_outputs_keep_prompts_with_the_same_slug(tmp_path, monkeypatch):
     assert len(list(tmp_path.glob("*.json"))) == 2
 
 
-@pytest.mark.parametrize("existing", ["shot.png", "shot.json", "shot-raw.png"])
+@pytest.mark.parametrize("existing", ["shot.png", "shot.png.json", "shot.png-raw.png"])
 def test_output_collision_is_rejected_before_generation(existing, tmp_path, monkeypatch):
     class Unused(_StubComfy):
         def is_up(self):
@@ -232,7 +232,7 @@ def test_delivered_image_preserves_exact_aspect(aspect, crop_keep, tmp_path, mon
     with Image.open(out) as art:
         assert art.width * b == art.height * a
         assert 0.8 <= art.width * art.height / cli.BASE_PIXELS**2 <= 1.15
-        assert json.loads(out.with_suffix(".json").read_text())["size"] == list(art.size)
+        assert json.loads(out.with_name(out.name + ".json").read_text())["size"] == list(art.size)
 
 
 def test_output_without_extension_saves_as_png(tmp_path, monkeypatch):
@@ -299,8 +299,8 @@ def test_output_symlinks_are_rejected_before_generation(target, tmp_path, monkey
         linked.symlink_to(outside, target_is_directory=True)
         out = linked / "art.png"
     else:
-        linked = {"image": out, "sidecar": out.with_suffix(".json"),
-                  "raw": out.with_name("art-raw.png")}[target]
+        linked = {"image": out, "sidecar": out.with_name("art.png.json"),
+                  "raw": out.with_name("art.png-raw.png")}[target]
         linked.symlink_to(tmp_path / "missing-target")
     with pytest.raises(ValueError, match="symlink"):
         cli.generate("crowd", "tennis", out=out, keep_raw=True)
@@ -322,3 +322,15 @@ def test_transport_errors_are_controlled_cli_errors(failure, tmp_path, monkeypat
     assert cli.main(["gen", "crowd", "--style", "tennis", "--out", str(tmp_path / "art.png")]) == 1
     assert "riso:" in capsys.readouterr().err
     assert not list(tmp_path.iterdir())
+
+
+def test_output_formats_keep_separate_sidecars(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    first = cli.generate("dawn crowd", "tennis", seed=7, out=tmp_path / "art.jpg", keep_raw=True)
+    second = cli.generate("dusk crowd", "tennis", seed=7, out=tmp_path / "art.webp", keep_raw=True)
+    for out, prompt in [(first, "dawn crowd"), (second, "dusk crowd")]:
+        record = json.loads(out.with_name(out.name + ".json").read_text())
+        assert record["prompt"] == prompt
+        assert out.with_name(out.name + "-raw.png").is_file()
+        assert out.is_file()
+    assert len(list(tmp_path.glob("*.json"))) == 2
