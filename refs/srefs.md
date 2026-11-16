@@ -3,6 +3,13 @@
 Two kinds of reference live here. Log both — a style you cannot reproduce
 next month is not a style.
 
+Scope: these are historical observations from 2026-08-15 with
+`flux1-schnell-fp8`, Redux and SigLIP, not model-wide rules. The initial strength
+and reference comparison used one crowd prompt at seed 4242; later sections
+state their own seed counts. Preset wording changed between phases, and the
+full raw corpus is absent. Re-check changed prompts, references and runtimes
+by looking at outputs; no subject, strength or outline guarantee follows.
+
 ## Midjourney sref codes
 
 | code | look | `--sw` that worked | seen on |
@@ -17,7 +24,7 @@ they are the style identity, not scratch files.
 | file | look | used by style preset |
 |---|---|---|
 | `style-flat-mosaic.png` | Dense interlocking flat regions, map-like, muted red/green/orange. No objects, no lettering, no shadows. Thin borders between regions. | `tennis` |
-| `style-flat-planes.png` | Four large flat planes, cream/coral/yellow, soft curved boundaries. No objects, no borders, no shadows. | — (outline-free alternative, see the trade below) |
+| `style-flat-planes.png` | Four large flat planes, cream/coral/yellow, soft curved boundaries. No objects, no borders, no shadows. | — (rejected: sparser compositions; not an outline-free alternative) |
 | `style-riso-poster.png` | Flat two-ink screenprint poster: teal/lilac blocks, cream ground, **one circle**. | — (retired 2026-08-15: the circle reproduced into output) |
 | `style-stained-glass.png` | Art nouveau stained glass: heavy black leading, jewel tones, dense botanical pattern, backlit. Deliberately the opposite of the poster. | — (Phase 2 proof ref; **never** use as a live ref, see below) |
 
@@ -42,11 +49,11 @@ seen from behind".
 the subject. There is no advantage either way at these values, so the workflow
 stays on `multiply`.
 
-**The lesson: Redux's usable band is 0.05–0.15, not the 0.0–10.0 the node
-advertises.** Anything at or above the node's 1.0 default is a style *copier*,
-not a style *reference*. Per-style overrides belong in `styles/*.toml`.
+**Tuning starting point from this sweep: 0.05–0.15.** The sampled higher
+strengths copied the reference in this crowd/seed test. This does not establish
+a universal usable band. Per-style overrides belong in `styles/*.toml`.
 
-## A reference teaches rendering mode — so only ever use FLAT references
+## The flat reference worked better in the two-reference comparison
 
 Read off proof (a), where one subject ran against both refs at 0.10. The
 stained-glass output is a **photograph**: real faces, depth of field,
@@ -54,10 +61,9 @@ photographic light, tinted dark red. The riso-poster output is genuinely flat
 and silhouetted. Same strength, same subject, same seed — the difference is
 that one reference is dimensional and the other is not.
 
-So the reference does not merely tint the palette. It decides whether the base
-model renders flat or falls back to photoreal, and a dimensional reference
-hands that decision back to the base model. **A style ref for this pipeline
-must be flat.** This is as load-bearing as the strength band above it.
+The reference affected rendering mode as well as colour in this comparison.
+Flat references are the starting recommendation for this pipeline; the pair
+does not establish what every dimensional reference or prompt will do.
 
 Two things a reference does *not* carry, also measured:
 
@@ -133,14 +139,14 @@ Two ways the original reasoning failed, both worth remembering:
 The outlines were never a reference property, so they were never a reason to
 prefer one reference over the other.
 
-## The medium word is the outline switch
+## Paper-medium wording reduced outlines in the tested crowds
 
 `docs/outlines-fixed-by-the-medium-word.png` — raw and finished, both prompts.
 
-The prompt said **"flat editorial illustration"**, and that phrase is not
-neutral: it means vector line art, which is outlined by convention. Every crowd
-came back in heavy black contours. Naming a **paper** medium instead removes
-them completely:
+The tested **"flat editorial illustration"** prompts produced heavy contours.
+Naming a **paper** medium reduced them in the recorded comparisons. A learned
+association with vector line art is an interpretation, not a verified account
+of the model's training data or a guarantee for other prompts:
 
 Scored on **two** axes, because the first version of this table only measured
 lines and picked a winner that quietly lost ground on framing. *Subject* is the
@@ -158,9 +164,9 @@ share of the frame carrying real detail rather than handsome abstraction.
 | **torn paper collage, matte paper shapes** | **0.31%** | 44.8% → **61.1% cropped** |
 
 For scale: a genuinely line-free image measures 0.00–0.04% on the same metric.
-0.31% is the floor, not a partial win — and the difference between 0.31% and
-0.94% is visible, not academic. At 0.94% there is still linework on collars and
-shoulders; at 0.31% there is none anywhere.
+The 0.31% measurement is above that floor. The compared images showed less
+linework than the 0.94% variant, including at collars and shoulders; neither
+the metric nor this small comparison proves all outputs will be outline-free.
 
 **The second axis is real and it nearly chose a different winner.** Torn paper
 costs about 10 points of subject share against cut-paper, exactly as suspected:
@@ -171,15 +177,12 @@ subject, better than the outlined alternative uncropped.
 
 The "no outlines" clause did nothing next to "editorial illustration"
 (3.64 → 3.75) and halved the lines next to "cut-paper collage" (1.79 → 0.94).
-That generalises past this repo and is stated as a law in `docs/BRIEF.md`:
-**a negative cannot overrule the convention a noun carries, only trim what
-survives once the noun agrees.**
+These two observations support trying a different medium phrase before tuning
+negative clauses for this preset, not a general law about negative prompts.
 
-**Substitute, do not delete or negate.** Deleting the phrase leaves a gap the
-model fills from the same convention, and a negative clause is ignored outright
-— 3.64% to 3.75% is noise. Only naming a different medium steers it. The
-reference artists' own language is print and paper, not illustration, and that
-turned out to be the whole difference.
+**Try substitution for this preset.** Deletion and negation did not help in the
+reported comparison; substitution did. Other subjects, seeds and models may
+respond differently.
 
 ### How to measure it — and how not to
 
@@ -202,23 +205,23 @@ illustration wording drew larger, crisper, individually-legible ones. The look
 spec is unambiguous that forms read by colour adjacency only, so the clean
 version ships, but the trade is real and visible in that image.
 
-**5. A sparse subject renders as the reference, whatever the reference is.**
+**5. One sparse prompt failed against four references.**
 "A tennis player mid-serve seen from the baseline" was run against four
 different references and produced no subject at all in every case — the poster
 ref's blocks, the planes ref's planes, the mosaic ref's regions, and with a
 patchwork-of-squares ref a literal checkerboard. A dense subject suppresses the
 reference's motif; a sparse one hands the frame to it.
 
-This is the strongest form of rule 3 and it is not specific to this repo, so it
-is stated as a law in `docs/BRIEF.md`: **whatever the subject does not fill,
-the style reference fills.** The acceptance test below is one of its
-consequences; `crop_keep` is another.
+In these tests, reference shapes filled regions the subject did not occupy.
+This motivates the diagnostic test below and `crop_keep`; it does not prove
+that all sparse prompts or all seeds must fail.
 
-## The acceptance test — no reference ships without it
+## Dense-subject acceptance and the sparse diagnostic
 
-**Hard rule: a candidate reference is judged on one dense subject and one
-sparse subject before it is allowed into a style preset.** Dense-only testing
-passes references that are unusable, and it will do so confidently.
+**The shipped preset targets dense subjects.** Compare one dense and one sparse
+subject to expose its limits, but sparse success was not a gate the mosaic
+reference passed. The earlier wording requiring both to pass contradicted the
+actual release decision.
 
 Run both through the preset you intend to ship, same seed, changing nothing but
 the subject, and look at the two images:
@@ -226,9 +229,12 @@ the subject, and look at the two images:
 1. **Dense** — a crowd, a bank of faces, a field of repeated elements.
 2. **Sparse** — one figure in open space.
 
-Fail the candidate if the sparse frame shows the reference's own motif, if
-either frame carries outlines (rule 4), or if anything memorable from the
-reference appears in either (rules 1–2).
+For dense-subject use, inspect the dense frame for subject presence, outlines
+and copied motifs (rules 1–4). Record sparse failures as unsupported scope;
+do not describe a dense-only preset as supporting sparse subjects without a
+separate successful evaluation. A conspicuous sparse failure can still be a
+reason to reject a candidate, but passing both was not the rule used to ship
+the current reference.
 
 **The automated check will not catch this.** `riso gen` warns on a featureless
 frame, but the sparse failure below scores a tonal span of 0.326 — far above
@@ -251,20 +257,26 @@ subject changed: **a checkerboard.** The reference's squares, straight through,
 with no tennis player anywhere in the frame. Rejected on the strength of this
 one image, despite the middle panel.
 
-`style-flat-mosaic.png` shipped instead — not because it is clean, but because
-it fails less badly on sparse subjects.
+`style-flat-mosaic.png` shipped for the dense-subject scope. The historical
+judgment was that it failed less badly on sparse subjects; it still failed
+the sparse test, and this is not evidence that it passed a two-subject gate.
 
-## Hit rate (measured 2026-08-15, the number to quote)
+## Historical hit rate notes (2026-08-15)
 
-Ten consecutive seeds, 1–10, one dense subject ("a crowd of tennis spectators
-seen from behind"), shipped preset, no seed hunting:
+The ledger recorded ten consecutive seeds, 1–10, one dense subject ("a crowd
+of tennis spectators seen from behind"), the preset at the time, no seed hunting:
 
 - **0 of 10 dead frames**, and **10 of 10 legible crowds** on the mosaic ref.
 - Ink coverage: 5 of 5 inks above 1% of the frame in 7 of 10.
 
-That is the honest quality of this pipeline **on a dense subject**. It does not
-generalise: the same measurement on a sparse subject is close to 0, per rule 5
-above. Pick subjects accordingly.
+An earlier README instead reported 8/10 usable and five inks in 9/10, also with
+zero dead frames. These counts cannot be reconciled from the repository:
+the individual raw frames, sidecars, immutable preset/runtime versions and
+scoring criteria were not published. "Usable" and "legible" were not defined
+as the same criterion. Neither account establishes a current preset hit rate.
+A future benchmark needs a versioned corpus, sidecars, criteria and per-frame
+metrics before a single current result can be quoted. Sparse-subject failures
+remain separate observations, not a measured population success rate.
 
 ### Prompts that minted these refs
 

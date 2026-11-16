@@ -9,12 +9,15 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-WORKFLOW_DIR = Path(__file__).resolve().parent.parent / "workflows"
+from riso.resources import ASSET_ROOT
+
+WORKFLOW_DIR = ASSET_ROOT / "workflows"
 DEFAULT_HOST = "127.0.0.1:8188"
 
 Workflow = Dict[str, Any]
@@ -85,7 +88,17 @@ def apply_params(
 
 
 class ComfyError(RuntimeError):
-    """ComfyUI refused a prompt or failed while executing it."""
+    """ComfyUI transport, response or execution failed."""
+
+
+def _service_errors(method):
+    @wraps(method)
+    def wrapped(*args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except (requests.RequestException, TimeoutError) as exc:
+            raise ComfyError(f"ComfyUI {method.__name__} failed: {exc}") from exc
+    return wrapped
 
 
 class Comfy:
@@ -98,6 +111,7 @@ class Comfy:
 
     # -- health ------------------------------------------------------------
 
+    @_service_errors
     def system_stats(self) -> Dict[str, Any]:
         response = requests.get(f"{self.base}/system_stats", timeout=self.timeout)
         response.raise_for_status()
@@ -106,12 +120,13 @@ class Comfy:
     def is_up(self) -> bool:
         try:
             self.system_stats()
-        except requests.RequestException:
+        except ComfyError:
             return False
         return True
 
     # -- running -----------------------------------------------------------
 
+    @_service_errors
     def upload_image(self, path: Union[str, Path], overwrite: bool = True) -> str:
         """Push a local image into ComfyUI's input dir; returns its filename.
 
@@ -132,6 +147,7 @@ class Comfy:
         name = uploaded["name"]
         return f"{subfolder}/{name}" if subfolder else name
 
+    @_service_errors
     def submit(self, workflow: Workflow) -> str:
         response = requests.post(
             f"{self.base}/prompt",
@@ -142,6 +158,7 @@ class Comfy:
             raise ComfyError(f"prompt rejected: {response.text[:800]}")
         return response.json()["prompt_id"]
 
+    @_service_errors
     def wait(self, prompt_id: str, timeout: float = 900.0) -> List[bytes]:
         """Block until the prompt finishes; return every image it saved.
 
@@ -168,6 +185,7 @@ class Comfy:
             time.sleep(0.5)
         raise TimeoutError(f"{prompt_id} did not finish within {timeout:.0f}s")
 
+    @_service_errors
     def _fetch(self, image: Dict[str, str]) -> bytes:
         response = requests.get(
             f"{self.base}/view",

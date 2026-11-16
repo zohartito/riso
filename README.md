@@ -10,14 +10,34 @@ Generation box: [`docs/generation-box.md`](docs/generation-box.md).
 ## Setup
 
 ```bash
-source .venv/bin/activate      # Python 3.13 here, syntax kept 3.11-safe
-pip install -e .               # puts the `riso` command on PATH
+python3 -m venv .venv          # Python 3.11 or newer
+source .venv/bin/activate      # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install --require-hashes -r requirements.txt
+python -m pip install --no-deps --no-build-isolation -e .  # `riso` on PATH
 python -m pytest -q
 ```
 
 `python -m riso` works identically if you would rather not install.
 
+`requirements.txt` is the authoritative lock for runtime, test and build
+dependencies, including transitive dependencies and wheel hashes. Install it
+first; disabling dependency resolution and build isolation on the second step
+keeps the editable install in that environment. CI uses the same commands.
+Binary wheels are required; an unsupported Python/platform fails rather than
+silently building with unpinned tools. The Python interpreter and the separate
+ComfyUI/weight installation are not covered by this lock. Bare `pip install .`
+or a Git URL can resolve different dependency versions.
+
+Non-editable installs (`python -m pip install --no-deps --no-build-isolation .`
+after the lock) also include the shipped
+styles, palettes, workflow and reference images. Output is written to `out/`
+under your current working directory, including when installed from a wheel.
+
 ## Generate
+
+Generation requires a separately installed, running **ComfyUI** and three model
+files. Follow the [public bootstrap and health checks](docs/generation-box.md#public-bootstrap)
+first. The post-pass and tests do not require ComfyUI or model weights.
 
 ```bash
 riso gen "a crowd of tennis spectators seen from behind" --style tennis --ar 3:4
@@ -25,16 +45,39 @@ riso gen "a crowd of tennis spectators seen from behind" --style tennis --ar 3:4
 
 One command: ComfyUI generation → riso post-pass → a finished PNG in `out/`,
 next to a JSON sidecar recording the prompt, seed, model, adapter and post
-settings that made it. `--seed` to reproduce, `--keep-raw` to also write the
+settings that made it. `--seed` to reuse a noise seed, `--keep-raw` to also write the
 pre-post-pass frame, `riso styles` to list presets.
+
+Default filenames include a unique run ID, so fixed-seed runs remain separate.
+An explicit `--out` must be new: existing images, sidecars or requested raw
+frames are never implicitly overwritten.
+`--out result` becomes `result.png`; unsupported extensions fail before
+generation starts.
+Sidecars and raw frames include the entire image filename: `art.jpg.json`
+and `art.jpg-raw.png`, for example. Thus `art.jpg` and `art.webp` retain
+independent records and raw frames.
 
 A style preset in `styles/*.toml` is the unit of series consistency — reference
 image, strength, prompt wording, palette, crop and post settings in one file.
-Two runs naming the same style differ in subject and seed and nothing else.
+For a series, hold the preset and its referenced files, workflow, `--ar` and
+generation runtime fixed; the style name alone does not enforce that. Sidecars
+record settings and paths, but do not hash the assets/workflow or capture
+ComfyUI/torch versions. A seed and style name do not guarantee identical
+generation after those inputs change.
 
-`crop_keep` delivers the densest part of the frame at the size you asked for:
-whatever the subject does not fill, the style reference fills with its own
-shapes, so the crop trades that away. `--ar 3:4` still gives 3:4 at full size.
+Preset names must start with a letter or digit and contain only letters,
+digits, underscores and hyphens. References must decode as images and resolve
+inside the bundled `refs/` directory (the source `refs/` in an editable install).
+For a custom reference, review and copy the image there before using its path
+in a preset. Presets cannot select arbitrary external files for upload.
+Output paths, including their parent directories, must not be symlinks.
+
+`crop_keep` selects a window with many ink boundaries. This reduced reference
+shapes around the subject in the recorded examples; it does not recognize the
+subject or guarantee useful framing. ComfyUI generates near one megapixel at
+latent-compatible dimensions; a final crop preserves the exact requested ratio
+before the post-pass. For example, `--ar 3:4` delivers 864×1152 from an 896×1152
+latent frame. The sidecar records both delivered `size` and `latent_size`.
 
 `docs/phase5-cropped-sheet.png` is three subjects through one preset, on the
 first seed for each, no hunting. Earlier sheets are kept beside it as the
@@ -42,25 +85,23 @@ record of how it got there.
 
 ## What this pipeline does and does not do
 
-**It renders dense, repeating subjects.** Crowds, banks of faces, fields of
-waves, stands of trees. That is not a limitation to work around, it is what the
-look is made of: flat colour adjacency has to describe form without outlines or
-shading, and it needs repeated elements to describe. The reference work
-(Ege Berkina, Gizem Akdag) is built the same way.
+**It targets dense, repeating subjects.** Crowds, banks of faces, fields of
+waves, stands of trees. These are the intended scope of the shipped preset,
+based on the finite schnell/Redux experiments recorded in `refs/srefs.md`.
 
-Subjects that work: `a crowd of tennis spectators seen from behind`,
+Subjects to try: `a crowd of tennis spectators seen from behind`,
 `rows of striped umbrellas on a beach`, `a stand of pine trees on a hillside`,
 `commuters on a station platform`, `a flock of birds over rooftops`.
 
-**It does not render a lone subject in open space.** One figure on an empty
-court comes back with no figure at all — and not as a blank frame: whatever the
-subject does not fill, the style reference fills with its own shapes. Measured
-against four different references, all four failed the same prompt the same
-way. No seed fixes it.
+**Sparse subjects failed in the recorded experiments.** The prompt "a tennis
+player mid-serve seen from the baseline" lost its figure against four tested
+references; reference shapes filled the frame instead. That is evidence about
+one prompt and those tested settings, not every sparse subject or every seed.
 
-**Hit rate on a dense subject, ten unhunted seeds, the shipped preset: 8 of 10
-usable, 0 dead, five inks in 9 of 10.** The two weak frames are mostly flat
-planes with a thin band of crowd.
+**The current preset has no reproducible published hit rate.** Historical
+[run notes](refs/srefs.md#historical-hit-rate-notes-2026-08-15) report ten dense
+crowds, but the raw frames, sidecars and versioned scoring criteria are not
+included. Treat the sheets as examples and inspect every output.
 
 **`riso gen` cannot tell you when the subject is missing.** It warns on a
 featureless frame, but a frame full of confident abstraction is not featureless
@@ -71,6 +112,7 @@ tool will report success. Look at what comes out.
 ## Post-pass
 
 ```python
+from pathlib import Path
 from PIL import Image
 from riso import post
 
@@ -81,19 +123,26 @@ art = post.compose(Image.open("in.png"), {
     "misregister": {"px": 2},
     "grain": {"amount": 0.11, "seed": 7},                  # 2px tooth by default
 })
+Path("out").mkdir(exist_ok=True)
 art.save("out/art.png")
 ```
 
 Steps run in a fixed order — `palette_lock → halftone → misregister → grain` —
-and each is optional. Same seed in, byte-identical PNG out. Palettes are data:
+and each is optional. The tests establish byte-identical PNGs for the same
+input pixels, post settings and grain seed in the same library environment;
+this does not promise byte-identical ComfyUI generation or cross-version PNG
+encoding. Palettes are data:
 add a JSON file to `palettes/` rather than hardcoding colours.
 
 **Two palette mappings, because they fail in opposite directions.** `nearest`
 picks the closest ink in Oklab and is right when the source already lives near
 the palette; on a generated frame, which sits nowhere near it, every pixel can
 land on the same ink and the image collapses to one flat field. `luma` ignores
-source hue and maps lightness bands onto the palette's lightness order, so form
-always survives. Style presets use `luma`.
+source hue and maps lightness bands onto the palette's lightness order. It can
+preserve forms with sufficient lightness contrast, but equal-lightness colours
+can merge into one ink. Quantization and the 2nd–98th percentile clipping can
+also lose small details; a lightness span below 0.02 becomes one ink. Style
+presets use `luma`, so inspect hue-defined forms and fine details after mapping.
 
 Generated images go to `out/`, which is gitignored. Style references in `refs/`
 are committed on purpose — they are the style identity.
@@ -114,17 +163,19 @@ png = comfy.generate(apply_params(load_workflow(),
                                   style_ref=ref, seed=4242))
 ```
 
-Two rules, both measured, both in [`refs/srefs.md`](refs/srefs.md) with the runs
-behind them:
+Two starting points from the historical schnell/Redux tests in
+[`refs/srefs.md`](refs/srefs.md), to re-check when inputs change:
 
-- **The usable strength band is 0.05–0.15, not the 0.0–10.0 the node
-  advertises.** At the node's own 1.0 default it reproduces the reference and
-  ignores the prompt entirely. The workflow ships at 0.10; `tennis` runs 0.08.
-- **A reference teaches rendering mode, so only ever use flat references.** A
-  dimensional reference lets the base model fall back to photoreal no matter
-  what the prompt says. The reference does not carry the palette — that comes
-  from the post-pass — and its output is not literally flat either, which is
-  why `palette_lock` is not optional.
+- **Start near 0.05–0.15 strength.** The initial sweep used one crowd prompt,
+  seed 4242, schnell at four steps and the recorded references. At 1.0 the
+  reference dominated that test. This is a tuning suggestion, not a universal
+  usable band. The workflow ships at 0.10; `tennis` runs 0.08 with its suffix.
+- **Start with flat references for this look.** At 0.10, the two-reference
+  comparison at seed 4242 produced a photographic stained-glass variant and a
+  flatter poster variant. It does not prove how all references or prompts
+  behave. Palette locking supplies the final inks, but cannot guarantee subject
+  presence or remove outlines. The paper-medium wording reduced measured
+  linework in the recorded crowd comparisons; inspect each generated frame.
 
 ## Models and licensing
 

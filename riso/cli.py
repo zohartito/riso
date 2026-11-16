@@ -1,12 +1,12 @@
 """``riso gen`` — subject prompt + style preset, one command, one finished PNG.
 
 Chains Phase 2 (ComfyUI style-reference generation) into Phase 1 (the riso
-post-pass). The subject and the seed are the only things that vary between
-runs of a series; everything else comes from ``styles/*.toml``.
+post-pass). Presets hold style settings; callers must also hold aspect ratio,
+referenced assets, workflow and generation runtime fixed across a series.
 
 Every image is written with a JSON sidecar naming the model, adapter, seed and
-post settings that made it — licence travels with the image, and a series that
-cannot be re-run is not a series.
+post settings that made it. It records paths and settings, not immutable asset
+hashes or generation runtime versions.
 """
 
 from __future__ import annotations
@@ -18,16 +18,18 @@ import math
 import random
 import re
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
-from PIL import Image
+from PIL import Image, ImageOps
+from requests import RequestException
 
 from riso import post
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
 from riso.styles import REPO_ROOT, STRENGTH_BAND, available_styles, load_style
 
-OUT_DIR = REPO_ROOT / "out"
+OUT_DIR = Path("out")
 
 # ~1 MP total, which is what schnell was trained around, snapped to a multiple
 # the latent can hold exactly.
@@ -51,7 +53,7 @@ def dimensions(
     base: int = BASE_PIXELS,
     multiple: int = LATENT_MULTIPLE,
 ) -> Tuple[int, int]:
-    """Pixel size for an aspect ratio, holding total area near ``base**2``."""
+    """Latent size near the aspect ratio, holding area near ``base**2``."""
     ratio_w, ratio_h = ratio
     scale = base / math.sqrt(ratio_w * ratio_h)
 
@@ -104,9 +106,30 @@ def generate(
     """Generate one image and return the path it was written to."""
     style = load_style(style_name)
     settings = style["generate"]
-    width, height = dimensions(parse_aspect(aspect))
+    ratio = parse_aspect(aspect)
+    width, height = dimensions(ratio)
+    divisor = math.gcd(*ratio)
+    ratio_w, ratio_h = (side // divisor for side in ratio)
+    factor = max(1, min(width // ratio_w, height // ratio_h))
+    delivered_size = (ratio_w * factor, ratio_h * factor)
     if seed is None:
         seed = random.randrange(2**31)
+
+    if out is None:
+        out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}-{uuid.uuid4().hex}.png"
+    if not out.suffix:
+        out = out.with_suffix(".png")
+    image_format = Image.registered_extensions().get(out.suffix.lower())
+    if image_format not in Image.SAVE:
+        raise ValueError(f"unsupported output extension: {out.suffix}")
+    sidecar = out.with_name(f"{out.name}.json")
+    raw_out = out.with_name(f"{out.name}-raw.png")
+    targets = [out, sidecar] + ([raw_out] if keep_raw else [])
+    for target in targets:
+        if any(part.is_symlink() for part in (target, *target.parents)):
+            raise ValueError(f"output paths must not contain a symlink: {target}")
+        if target.exists():
+            raise FileExistsError(f"refusing to overwrite {target}; choose another --out")
 
     keep = float(settings.get("crop_keep", 1.0))
     if not 0.0 < keep <= 1.0:
@@ -126,13 +149,14 @@ def generate(
     comfy = Comfy(host)
     if not comfy.is_up():
         raise ComfyError(
-            f"no ComfyUI at {host} — start it with `systemctl --user start comfyui` "
-            "from inside WSL on the PC (see docs/generation-box.md)"
+            f"no ComfyUI at {host} — in your ComfyUI checkout, start "
+            "`python main.py --listen 127.0.0.1 --port 8188` "
+            "(see docs/generation-box.md for installation; "
+            "`systemctl --user start comfyui` only applies if you installed that unit)"
         )
 
-    # The reference cannot carry flatness and subject clarity at the same
-    # strength — see refs/srefs.md. The preset says "flat" in words too, which
-    # is what lets the strength sit low enough for the subject to survive.
+    # In the recorded crowd tests, a flatness clause helped balance style and
+    # subject at low strength. See refs/srefs.md for the tested settings.
     full_prompt = prompt + settings.get("prompt_suffix", "")
 
     uploaded = comfy.upload_image(settings["ref"])
@@ -179,18 +203,20 @@ def generate(
                 raw, colors, (round(width * keep), round(height * keep))
             ).resize((width, height), Image.LANCZOS)
 
+        # Latent multiples approximate the ratio; trim to an exact integer
+        # ratio before adding texture so the final grain stays at pixel scale.
+        framed = ImageOps.fit(framed, delivered_size, method=Image.LANCZOS)
         art = post.compose(framed, preset)
 
-        if out is None:
-            out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}.png"
         out.parent.mkdir(parents=True, exist_ok=True)
-        art.save(out)
+        with out.open("xb") as handle:
+            art.save(handle, format=image_format)
 
         if keep_raw:
-            raw.save(out.with_name(f"{out.stem}-raw.png"))
+            with raw_out.open("xb") as handle:
+                raw.save(handle, format="PNG")
 
-    out.with_suffix(".json").write_text(
-        json.dumps(
+    record = json.dumps(
             {
                 "prompt": prompt,
                 "prompt_sent": full_prompt,
@@ -205,15 +231,15 @@ def generate(
                 ),
                 "seed": seed,
                 "steps": settings.get("steps"),
-                "size": [width, height],
+                "size": list(delivered_size),
+                "latent_size": [width, height],
                 "crop_keep": keep,
                 "post": preset,
             },
             indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+        ) + "\n"
+    with sidecar.open("x", encoding="utf-8") as handle:
+        handle.write(record)
     return out
 
 
@@ -232,7 +258,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("--ar", default="1:1", help="aspect ratio, e.g. 3:4")
     gen.add_argument("--seed", type=int, help="defaults to random; recorded either way")
-    gen.add_argument("--out", type=Path, help="output path (default out/<style>-<slug>-<seed>.png)")
+    gen.add_argument("--out", type=Path, help="new output path (default out/<style>-<slug>-<seed>-<run-id>.png)")
     gen.add_argument("--host", default="127.0.0.1:8188", help="ComfyUI host:port")
     gen.add_argument(
         "--keep-raw",
@@ -262,7 +288,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             out=args.out,
             keep_raw=args.keep_raw,
         )
-    except (ComfyError, FileNotFoundError, ValueError) as exc:
+    except (ComfyError, RequestException, TimeoutError, FileNotFoundError, FileExistsError, ValueError) as exc:
         print(f"riso: {exc}", file=sys.stderr)
         return 1
 

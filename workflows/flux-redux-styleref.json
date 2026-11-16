@@ -73,7 +73,7 @@
       "strength_type": "multiply"
     },
     "_meta": {
-      "title": "Style vs subject balance - usable band is 0.05-0.15, 0.10 centred"
+      "title": "Style vs subject balance - recorded crowd sweep suggests 0.05-0.15, default 0.10"
     }
   },
   "latent": {
