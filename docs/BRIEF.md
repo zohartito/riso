@@ -60,34 +60,32 @@ one-off pretty images are not the deliverable.**
 - 1–2px RGB channel misregistration
 - optional halftone on a duplicated luminance channel
 
-## Two laws about driving the model — these are not about tennis
+## Two observations from the schnell/Redux experiments
 
-Both were paid for in generation time on this repo, and neither is specific to
-it. If you are reading this before touching a prompt or a reference, read these
-two things first. Measurements and workings are in `refs/srefs.md`.
+These 2026-08-15 observations are bounded by the prompts, references, presets
+and seeds in `refs/srefs.md`. They are tuning guidance, not model-wide laws;
+changed inputs still require human inspection.
 
-**1. A negative cannot overrule the convention a noun carries. It can only trim
-what survives once the noun agrees.**
+**1. Medium substitution helped more than negation in the crowd comparison.**
 
 The prompt said "flat editorial illustration" and every crowd came back in
-heavy contour lines, because that phrase means vector line art. Adding "no
+heavy contour lines. A vector-line-art association is an interpretation. Adding "no
 outlines, no linework" moved thin-line coverage from 3.64% to 3.75% — nothing.
 Adding the *same clause* to "cut-paper collage" moved it from 1.79% to 0.94%.
 Change the noun first; the negative only tidies up afterwards. Naming a paper
 medium instead of an illustration medium took the same measure to 0.31%.
 
-**2. Whatever the subject does not fill, the style reference fills.**
+**2. Reference motifs dominated one sparse prompt against four references.**
 
-A sparse subject does not render weakly — it renders *as the reference*. The
-same prompt against four different references produced no subject in all four:
+The tested sparse prompt against four references produced no subject in all four:
 the poster ref's blocks, the planes ref's planes, the mosaic ref's regions, and
 from a patchwork-of-squares reference a literal checkerboard. Ask for torn
 paper collage and the empty regions become torn paper.
 
-Three consequences, all load-bearing: choose subjects that fill the frame
+Practical starting points for this preset: choose subjects that fill the frame
 (see "Subject selection is part of the style" below); judge a candidate
 reference on one dense **and** one sparse subject, never dense alone; and crop
-to the subject, because the space it does not occupy is never neutral.
+to the subject where that helps. Other prompts and seeds have not been ruled out.
 
 ## Existing assets — do not re-clone or re-download
 
@@ -259,7 +257,7 @@ establish a reproducible hit rate for the current preset or sparse subjects.
   reference tested, and the erosion measurement originally cited here does not
   detect outlines at all. Full retraction in `refs/srefs.md` rule 4, evidence
   in `docs/outlines-come-from-the-model.png`. Still unsolved.
-- Panel 2 is a failure, and picking a different seed would not fix it.
+- Panel 2 is a failure; the available samples do not establish whether another seed could fix it.
 
 ### Phase 5a — the reference A/B, so the choice is between two visible things
 
@@ -292,18 +290,17 @@ two panels of three. `docs/phase5-planes-sheet.png` is kept as the record.
 `docs/outlines-fixed-by-the-medium-word.png`, and the sheet it produces is
 `docs/phase5-outline-fix-sheet.png`.
 
-The prompt said "flat editorial illustration", which in training data means
-vector line art. Naming a paper medium instead — **"torn paper collage, matte
+The tested prompt said "flat editorial illustration". Naming a paper medium
+instead — **"torn paper collage, matte
 paper shapes"** — drops thin-dark-line coverage from 3.64% to 0.31%, against a
 0.00–0.04% floor for genuinely line-free images. The look spec's "no outlines"
-bullet is now met.
+bullet was judged improved in the compared frames, not guaranteed across seeds.
 
-Three things learned that generalise past this repo:
+Three lessons from these comparisons:
 
 - **Substitution beats deletion and negation.** A "no outlines" clause moved
-  the number from 3.64% to 3.75%, i.e. not at all. The model does not take
-  instruction not to draw something; it takes instruction to draw a different
-  thing.
+  the number from 3.64% to 3.75%, i.e. no measured improvement in this test.
+  It does not establish a model-wide inability to follow negative instructions.
 - **Validate a metric before you trust it.** The erosion measure that blamed
   the reference was never tested against a known-positive and a
   known-negative. Its replacement was, before it was used.

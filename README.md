@@ -72,21 +72,18 @@ record of how it got there.
 
 ## What this pipeline does and does not do
 
-**It renders dense, repeating subjects.** Crowds, banks of faces, fields of
-waves, stands of trees. That is not a limitation to work around, it is what the
-look is made of: flat colour adjacency has to describe form without outlines or
-shading, and it needs repeated elements to describe. The reference work
-(Ege Berkina, Gizem Akdag) is built the same way.
+**It targets dense, repeating subjects.** Crowds, banks of faces, fields of
+waves, stands of trees. These are the intended scope of the shipped preset,
+based on the finite schnell/Redux experiments recorded in `refs/srefs.md`.
 
-Subjects that work: `a crowd of tennis spectators seen from behind`,
+Subjects to try: `a crowd of tennis spectators seen from behind`,
 `rows of striped umbrellas on a beach`, `a stand of pine trees on a hillside`,
 `commuters on a station platform`, `a flock of birds over rooftops`.
 
-**It does not render a lone subject in open space.** One figure on an empty
-court comes back with no figure at all — and not as a blank frame: whatever the
-subject does not fill, the style reference fills with its own shapes. Measured
-against four different references, all four failed the same prompt the same
-way. No seed fixes it.
+**Sparse subjects failed in the recorded experiments.** The prompt "a tennis
+player mid-serve seen from the baseline" lost its figure against four tested
+references; reference shapes filled the frame instead. That is evidence about
+one prompt and those tested settings, not every sparse subject or every seed.
 
 **The current preset has no reproducible published hit rate.** Historical
 [run notes](refs/srefs.md#historical-hit-rate-notes-2026-08-15) report ten dense
@@ -151,17 +148,19 @@ png = comfy.generate(apply_params(load_workflow(),
                                   style_ref=ref, seed=4242))
 ```
 
-Two rules, both measured, both in [`refs/srefs.md`](refs/srefs.md) with the runs
-behind them:
+Two starting points from the historical schnell/Redux tests in
+[`refs/srefs.md`](refs/srefs.md), to re-check when inputs change:
 
-- **The usable strength band is 0.05–0.15, not the 0.0–10.0 the node
-  advertises.** At the node's own 1.0 default it reproduces the reference and
-  ignores the prompt entirely. The workflow ships at 0.10; `tennis` runs 0.08.
-- **A reference teaches rendering mode, so only ever use flat references.** A
-  dimensional reference lets the base model fall back to photoreal no matter
-  what the prompt says. The reference does not carry the palette — that comes
-  from the post-pass — and its output is not literally flat either, which is
-  why `palette_lock` is not optional.
+- **Start near 0.05–0.15 strength.** The initial sweep used one crowd prompt,
+  seed 4242, schnell at four steps and the recorded references. At 1.0 the
+  reference dominated that test. This is a tuning suggestion, not a universal
+  usable band. The workflow ships at 0.10; `tennis` runs 0.08 with its suffix.
+- **Start with flat references for this look.** At 0.10, the two-reference
+  comparison at seed 4242 produced a photographic stained-glass variant and a
+  flatter poster variant. It does not prove how all references or prompts
+  behave. Palette locking supplies the final inks, but cannot guarantee subject
+  presence or remove outlines. The paper-medium wording reduced measured
+  linework in the recorded crowd comparisons; inspect each generated frame.
 
 ## Models and licensing
 
