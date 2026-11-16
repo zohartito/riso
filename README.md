@@ -99,6 +99,7 @@ tool will report success. Look at what comes out.
 ## Post-pass
 
 ```python
+from pathlib import Path
 from PIL import Image
 from riso import post
 
@@ -109,6 +110,7 @@ art = post.compose(Image.open("in.png"), {
     "misregister": {"px": 2},
     "grain": {"amount": 0.11, "seed": 7},                  # 2px tooth by default
 })
+Path("out").mkdir(exist_ok=True)
 art.save("out/art.png")
 ```
 
