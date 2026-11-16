@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 
 import pytest
+import requests
 
 from riso import comfy
 
@@ -127,3 +128,72 @@ def test_missing_workflow_is_a_clear_error():
 def test_workflow_loads_by_path_too():
     path = comfy.WORKFLOW_DIR / "flux-redux-styleref.json"
     assert comfy.load_workflow(path) == comfy.load_workflow()
+
+
+@pytest.mark.parametrize("operation", ["system_stats", "upload_image", "submit", "wait", "_fetch"])
+@pytest.mark.parametrize("failure", [requests.ConnectionError("offline"), requests.HTTPError("503 unavailable")])
+def test_transport_failures_become_comfy_errors(operation, failure, tmp_path, monkeypatch):
+    def fail(*args, **kwargs):
+        raise failure
+
+    monkeypatch.setattr(comfy.requests, "get", fail)
+    monkeypatch.setattr(comfy.requests, "post", fail)
+    ref = tmp_path / "ref.png"
+    ref.write_bytes(b"synthetic request body")
+    args = {"system_stats": (), "upload_image": (ref,), "submit": ({},),
+            "wait": ("test-prompt",), "_fetch": ({"filename": "art.png"},)}
+    with pytest.raises(comfy.ComfyError, match="offline|503"):
+        getattr(comfy.Comfy(), operation)(*args[operation])
+
+
+def test_wait_timeout_is_a_comfy_error():
+    with pytest.raises(comfy.ComfyError, match="did not finish"):
+        comfy.Comfy().wait("test-prompt", timeout=0)
+
+
+class _Response:
+    status_code = 200
+    text = "response"
+    content = b"image bytes"
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError("503 unavailable")
+
+    def json(self):
+        return self.payload
+
+
+def test_upload_http_failure_is_a_comfy_error(tmp_path, monkeypatch):
+    response = _Response({})
+    response.status_code = 503
+    monkeypatch.setattr(comfy.requests, "post", lambda *a, **kw: response)
+    ref = tmp_path / "ref.png"
+    ref.write_bytes(b"synthetic request body")
+    with pytest.raises(comfy.ComfyError, match="503"):
+        comfy.Comfy().upload_image(ref)
+
+
+def test_generation_reads_history_and_downloads_image(monkeypatch):
+    monkeypatch.setattr(comfy.requests, "post", lambda *a, **kw: _Response({"prompt_id": "test"}))
+    def get(url, **kwargs):
+        if "/history/" in url:
+            return _Response({"test": {"outputs": {"save": {"images": [{"filename": "art.png"}]}}}})
+        assert kwargs["params"]["filename"] == "art.png"
+        return _Response({})
+    monkeypatch.setattr(comfy.requests, "get", get)
+    assert comfy.Comfy().generate({}) == b"image bytes"
+
+
+@pytest.mark.parametrize("entry, message", [
+    ({"status": {"status_str": "error"}}, "execution failed"),
+    ({"outputs": {}}, "saved no image"),
+])
+def test_generation_response_failures(entry, message, monkeypatch):
+    monkeypatch.setattr(comfy.requests, "post", lambda *a, **kw: _Response({"prompt_id": "test"}))
+    monkeypatch.setattr(comfy.requests, "get", lambda *a, **kw: _Response({"test": entry}))
+    with pytest.raises(comfy.ComfyError, match=message):
+        comfy.Comfy().generate({})

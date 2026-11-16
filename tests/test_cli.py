@@ -10,6 +10,7 @@ import json
 import math
 
 import pytest
+import requests
 from PIL import Image
 
 from riso import cli, styles
@@ -304,3 +305,20 @@ def test_output_symlinks_are_rejected_before_generation(target, tmp_path, monkey
     with pytest.raises(ValueError, match="symlink"):
         cli.generate("crowd", "tennis", out=out, keep_raw=True)
     assert not (tmp_path / "missing-target").exists()
+
+
+@pytest.mark.parametrize("failure", [requests.ConnectionError("offline"), TimeoutError("wait expired")])
+def test_transport_errors_are_controlled_cli_errors(failure, tmp_path, monkeypatch, capsys):
+    class Failed(_StubComfy):
+        def upload_image(self, path):
+            if isinstance(failure, requests.RequestException):
+                raise failure
+            return super().upload_image(path)
+
+        def generate(self, workflow):
+            raise failure
+
+    monkeypatch.setattr(cli, "Comfy", Failed)
+    assert cli.main(["gen", "crowd", "--style", "tennis", "--out", str(tmp_path / "art.png")]) == 1
+    assert "riso:" in capsys.readouterr().err
+    assert not list(tmp_path.iterdir())

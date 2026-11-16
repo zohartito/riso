@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
 from PIL import Image, ImageOps
+from requests import RequestException
 
 from riso import post
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
@@ -288,7 +289,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             out=args.out,
             keep_raw=args.keep_raw,
         )
-    except (ComfyError, FileNotFoundError, FileExistsError, ValueError) as exc:
+    except (ComfyError, RequestException, TimeoutError, FileNotFoundError, FileExistsError, ValueError) as exc:
         print(f"riso: {exc}", file=sys.stderr)
         return 1
 
