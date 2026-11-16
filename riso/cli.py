@@ -125,6 +125,8 @@ def generate(
     raw_out = out.with_name(f"{out.stem}-raw.png")
     targets = [out, sidecar] + ([raw_out] if keep_raw else [])
     for target in targets:
+        if any(part.is_symlink() for part in (target, *target.parents)):
+            raise ValueError(f"output paths must not contain a symlink: {target}")
         if target.exists():
             raise FileExistsError(f"refusing to overwrite {target}; choose another --out")
 

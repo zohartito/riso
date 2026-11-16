@@ -48,6 +48,13 @@ A style preset in `styles/*.toml` is the unit of series consistency — referenc
 image, strength, prompt wording, palette, crop and post settings in one file.
 Two runs naming the same style differ in subject and seed and nothing else.
 
+Preset names must start with a letter or digit and contain only letters,
+digits, underscores and hyphens. References must decode as images and resolve
+inside the bundled `refs/` directory (the source `refs/` in an editable install).
+For a custom reference, review and copy the image there before using its path
+in a preset. Presets cannot select arbitrary external files for upload.
+Output paths, including their parent directories, must not be symlinks.
+
 `crop_keep` delivers the densest part of the frame at the size you asked for:
 whatever the subject does not fill, the style reference fills with its own
 shapes, so the crop trades that away. ComfyUI generates near one megapixel at

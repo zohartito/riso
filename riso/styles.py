@@ -10,9 +10,12 @@ that function's preset schema and nothing here needs to know about halftones.
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 from typing import Any, Dict, List, Union
+
+from PIL import Image
 
 from riso.resources import ASSET_ROOT
 
@@ -40,6 +43,9 @@ def load_style(name: Union[str, Path]) -> Style:
         raise FileNotFoundError(f"no style preset at {path}")
 
     data = tomllib.loads(path.read_text(encoding="utf-8"))
+    data.setdefault("name", path.stem)
+    if not isinstance(data["name"], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", data["name"]):
+        raise ValueError("style name must contain only letters, digits, underscores or hyphens")
 
     generate = data.get("generate")
     if not isinstance(generate, dict) or "ref" not in generate:
@@ -50,6 +56,14 @@ def load_style(name: Union[str, Path]) -> Style:
         ref = REPO_ROOT / ref
     if not ref.is_file():
         raise FileNotFoundError(f"{path} points at a missing reference: {ref}")
+    ref = ref.resolve()
+    if not ref.is_relative_to((REPO_ROOT / "refs").resolve()):
+        raise ValueError("style reference must be inside the installed or source refs/ directory")
+    try:
+        with Image.open(ref) as image:
+            image.verify()
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"style reference must be a readable image: {ref}") from exc
     generate["ref"] = ref
 
     strength = float(generate.get("strength", 0.1))
@@ -61,7 +75,6 @@ def load_style(name: Union[str, Path]) -> Style:
     if preset is not None and not isinstance(preset, dict):
         raise ValueError(f"{path} has a [post] that is not a table")
 
-    data.setdefault("name", path.stem)
     return data
 
 

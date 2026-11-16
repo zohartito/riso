@@ -251,3 +251,56 @@ def test_unsupported_output_extension_fails_before_generation(tmp_path, monkeypa
     with pytest.raises(ValueError, match="unsupported output extension"):
         cli.generate("crowd", "tennis", out=tmp_path / "result.unknown")
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("name", ["../../outside/pwn", "../pwn", "a/b", "a\\b", ""])
+def test_preset_names_cannot_be_output_paths(name, tmp_path):
+    preset = tmp_path / "unsafe.toml"
+    preset.write_text(f'name = {json.dumps(name)}\n[generate]\nref = "refs/style-flat-mosaic.png"\n')
+    with pytest.raises(ValueError, match="style name"):
+        styles.load_style(preset)
+
+
+@pytest.mark.parametrize("kind", ["text", "outside_image", "symlink"])
+def test_reference_is_an_image_inside_refs(kind, tmp_path, monkeypatch):
+    root = tmp_path / "assets"
+    refs = root / "refs"
+    refs.mkdir(parents=True)
+    monkeypatch.setattr(styles, "REPO_ROOT", root)
+    external = tmp_path / "private.png"
+    Image.new("RGB", (8, 8)).save(external)
+    if kind == "text":
+        ref = refs / "not-an-image.png"
+        ref.write_text("synthetic non-image")
+    elif kind == "symlink":
+        ref = refs / "link.png"
+        ref.symlink_to(external)
+    else:
+        ref = external
+    preset = tmp_path / "unsafe.toml"
+    preset.write_text(f'[generate]\nref = "{ref.as_posix()}"\n')
+    with pytest.raises(ValueError, match="reference"):
+        styles.load_style(preset)
+
+
+@pytest.mark.parametrize("target", ["image", "sidecar", "raw", "parent"])
+def test_output_symlinks_are_rejected_before_generation(target, tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("reject symlinks before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    out = tmp_path / "art.png"
+    if target == "parent":
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        linked = tmp_path / "linked"
+        linked.symlink_to(outside, target_is_directory=True)
+        out = linked / "art.png"
+    else:
+        linked = {"image": out, "sidecar": out.with_suffix(".json"),
+                  "raw": out.with_name("art-raw.png")}[target]
+        linked.symlink_to(tmp_path / "missing-target")
+    with pytest.raises(ValueError, match="symlink"):
+        cli.generate("crowd", "tennis", out=out, keep_raw=True)
+    assert not (tmp_path / "missing-target").exists()
