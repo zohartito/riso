@@ -12,14 +12,24 @@ Generation box: [`docs/generation-box.md`](docs/generation-box.md).
 ```bash
 python3 -m venv .venv          # Python 3.11 or newer
 source .venv/bin/activate      # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt  # runtime dependencies and pytest
-python -m pip install --no-deps -e .       # puts the `riso` command on PATH
+python -m pip install --require-hashes -r requirements.txt
+python -m pip install --no-deps --no-build-isolation -e .  # `riso` on PATH
 python -m pytest -q
 ```
 
 `python -m riso` works identically if you would rather not install.
 
-Non-editable installs (`python -m pip install .`) also include the shipped
+`requirements.txt` is the authoritative lock for runtime, test and build
+dependencies, including transitive dependencies and wheel hashes. Install it
+first; disabling dependency resolution and build isolation on the second step
+keeps the editable install in that environment. CI uses the same commands.
+Binary wheels are required; an unsupported Python/platform fails rather than
+silently building with unpinned tools. The Python interpreter and the separate
+ComfyUI/weight installation are not covered by this lock. Bare `pip install .`
+or a Git URL can resolve different dependency versions.
+
+Non-editable installs (`python -m pip install --no-deps --no-build-isolation .`
+after the lock) also include the shipped
 styles, palettes, workflow and reference images. Output is written to `out/`
 under your current working directory, including when installed from a wheel.
 
