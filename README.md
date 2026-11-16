@@ -34,6 +34,10 @@ next to a JSON sidecar recording the prompt, seed, model, adapter and post
 settings that made it. `--seed` to reproduce, `--keep-raw` to also write the
 pre-post-pass frame, `riso styles` to list presets.
 
+Default filenames include a unique run ID, so fixed-seed runs remain separate.
+An explicit `--out` must be new: existing images, sidecars or requested raw
+frames are never implicitly overwritten.
+
 A style preset in `styles/*.toml` is the unit of series consistency — reference
 image, strength, prompt wording, palette, crop and post settings in one file.
 Two runs naming the same style differ in subject and seed and nothing else.

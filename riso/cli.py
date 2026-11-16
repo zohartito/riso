@@ -18,6 +18,7 @@ import math
 import random
 import re
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
@@ -108,6 +109,15 @@ def generate(
     if seed is None:
         seed = random.randrange(2**31)
 
+    if out is None:
+        out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}-{uuid.uuid4().hex}.png"
+    sidecar = out.with_suffix(".json")
+    raw_out = out.with_name(f"{out.stem}-raw.png")
+    targets = [out, sidecar] + ([raw_out] if keep_raw else [])
+    for target in targets:
+        if target.exists():
+            raise FileExistsError(f"refusing to overwrite {target}; choose another --out")
+
     keep = float(settings.get("crop_keep", 1.0))
     if not 0.0 < keep <= 1.0:
         raise ValueError(f"crop_keep must be in (0, 1], got {keep}")
@@ -183,16 +193,15 @@ def generate(
 
         art = post.compose(framed, preset)
 
-        if out is None:
-            out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}.png"
         out.parent.mkdir(parents=True, exist_ok=True)
-        art.save(out)
+        with out.open("xb") as handle:
+            art.save(handle)
 
         if keep_raw:
-            raw.save(out.with_name(f"{out.stem}-raw.png"))
+            with raw_out.open("xb") as handle:
+                raw.save(handle, format="PNG")
 
-    out.with_suffix(".json").write_text(
-        json.dumps(
+    record = json.dumps(
             {
                 "prompt": prompt,
                 "prompt_sent": full_prompt,
@@ -212,10 +221,9 @@ def generate(
                 "post": preset,
             },
             indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+        ) + "\n"
+    with sidecar.open("x", encoding="utf-8") as handle:
+        handle.write(record)
     return out
 
 
@@ -234,7 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("--ar", default="1:1", help="aspect ratio, e.g. 3:4")
     gen.add_argument("--seed", type=int, help="defaults to random; recorded either way")
-    gen.add_argument("--out", type=Path, help="output path (default out/<style>-<slug>-<seed>.png)")
+    gen.add_argument("--out", type=Path, help="new output path (default out/<style>-<slug>-<seed>-<run-id>.png)")
     gen.add_argument("--host", default="127.0.0.1:8188", help="ComfyUI host:port")
     gen.add_argument(
         "--keep-raw",
@@ -264,7 +272,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             out=args.out,
             keep_raw=args.keep_raw,
         )
-    except (ComfyError, FileNotFoundError, ValueError) as exc:
+    except (ComfyError, FileNotFoundError, FileExistsError, ValueError) as exc:
         print(f"riso: {exc}", file=sys.stderr)
         return 1
 

@@ -188,3 +188,30 @@ def test_dead_comfyui_points_to_a_public_launch_command(capsys, monkeypatch):
     error = capsys.readouterr().err
     assert "python main.py --listen 127.0.0.1 --port 8188" in error
     assert "docs/generation-box.md" in error
+
+
+def test_default_outputs_keep_prompts_with_the_same_slug(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    monkeypatch.setattr(cli, "OUT_DIR", tmp_path)
+    prefix = "a crowd of tennis spectators seen from behind at "
+    first = cli.generate(prefix + "dawn", "tennis", seed=7)
+    original = first.read_bytes()
+    second = cli.generate(prefix + "dusk", "tennis", seed=7)
+    assert first != second
+    assert first.read_bytes() == original
+    assert len(list(tmp_path.glob("*.png"))) == 2
+    assert len(list(tmp_path.glob("*.json"))) == 2
+
+
+@pytest.mark.parametrize("existing", ["shot.png", "shot.json", "shot-raw.png"])
+def test_output_collision_is_rejected_before_generation(existing, tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("output conflicts must be checked before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    target = tmp_path / existing
+    target.write_bytes(b"keep this artifact")
+    with pytest.raises(FileExistsError):
+        cli.generate("crowd", "tennis", seed=7, out=tmp_path / "shot.png", keep_raw=True)
+    assert target.read_bytes() == b"keep this artifact"
