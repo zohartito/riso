@@ -10,8 +10,10 @@ Generation box: [`docs/generation-box.md`](docs/generation-box.md).
 ## Setup
 
 ```bash
-source .venv/bin/activate      # Python 3.13 here, syntax kept 3.11-safe
-pip install -e .               # puts the `riso` command on PATH
+python3 -m venv .venv          # Python 3.11 or newer
+source .venv/bin/activate      # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt  # runtime dependencies and pytest
+python -m pip install --no-deps -e .       # puts the `riso` command on PATH
 python -m pytest -q
 ```
 
