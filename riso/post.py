@@ -167,9 +167,9 @@ def _oklab_lightness(arr: np.ndarray) -> np.ndarray:
 def tonal_span(img: Image.Image) -> float:
     """Oklab lightness range of an image, ignoring the outer 2% at each end.
 
-    The number `luma` mode separates on. Near zero means the frame carries no
-    form at all — which is how a failed generation looks, and worth checking
-    before a post-pass dresses it up.
+    The number `luma` mode separates on. Near zero means little lightness
+    contrast survives the clipping; hue-defined forms and small details may
+    still exist, but luma mapping can discard them.
     """
     low, high = np.percentile(_oklab_lightness(_to_array(img)), (2.0, 98.0))
     return float(high) - float(low)

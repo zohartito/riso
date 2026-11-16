@@ -119,8 +119,11 @@ add a JSON file to `palettes/` rather than hardcoding colours.
 picks the closest ink in Oklab and is right when the source already lives near
 the palette; on a generated frame, which sits nowhere near it, every pixel can
 land on the same ink and the image collapses to one flat field. `luma` ignores
-source hue and maps lightness bands onto the palette's lightness order, so form
-always survives. Style presets use `luma`.
+source hue and maps lightness bands onto the palette's lightness order. It can
+preserve forms with sufficient lightness contrast, but equal-lightness colours
+can merge into one ink. Quantization and the 2nd–98th percentile clipping can
+also lose small details; a lightness span below 0.02 becomes one ink. Style
+presets use `luma`, so inspect hue-defined forms and fine details after mapping.
 
 Generated images go to `out/`, which is gitignored. Style references in `refs/`
 are committed on purpose — they are the style identity.
