@@ -84,9 +84,10 @@ subject does not fill, the style reference fills with its own shapes. Measured
 against four different references, all four failed the same prompt the same
 way. No seed fixes it.
 
-**Hit rate on a dense subject, ten unhunted seeds, the shipped preset: 8 of 10
-usable, 0 dead, five inks in 9 of 10.** The two weak frames are mostly flat
-planes with a thin band of crowd.
+**The current preset has no reproducible published hit rate.** Historical
+[run notes](refs/srefs.md#historical-hit-rate-notes-2026-08-15) report ten dense
+crowds, but the raw frames, sidecars and versioned scoring criteria are not
+included. Treat the sheets as examples and inspect every output.
 
 **`riso gen` cannot tell you when the subject is missing.** It warns on a
 featureless frame, but a frame full of confident abstraction is not featureless

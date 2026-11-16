@@ -241,9 +241,11 @@ one that matters more — **a sparse subject renders as the reference, whatever
 the reference is.** Four different refs, same sparse prompt, no subject in any
 of them.
 
-**c) Hit rate: 0 dead and 10 legible crowds out of 10 unhunted seeds** on a
-dense subject. Five inks above 1% of frame in 7 of 10. On a sparse subject the
-same measurement is close to zero.
+**c) Historical run notes: 0 dead and 10 legible crowds out of 10 unhunted
+seeds** on a dense subject; five inks above 1% of frame in 7 of 10. The raw
+corpus and versioned criteria are absent, and the README formerly gave
+different counts. See `refs/srefs.md` for that discrepancy; these notes do not
+establish a reproducible hit rate for the current preset or sparse subjects.
 
 **d) The sheet.** Panel 1 (crowd) is the best image this repo has made. Panel 3
 (handshake) now reads as two hands, which it did not in Phase 3. Panel 2

@@ -254,17 +254,22 @@ one image, despite the middle panel.
 `style-flat-mosaic.png` shipped instead — not because it is clean, but because
 it fails less badly on sparse subjects.
 
-## Hit rate (measured 2026-08-15, the number to quote)
+## Historical hit rate notes (2026-08-15)
 
-Ten consecutive seeds, 1–10, one dense subject ("a crowd of tennis spectators
-seen from behind"), shipped preset, no seed hunting:
+The ledger recorded ten consecutive seeds, 1–10, one dense subject ("a crowd
+of tennis spectators seen from behind"), the preset at the time, no seed hunting:
 
 - **0 of 10 dead frames**, and **10 of 10 legible crowds** on the mosaic ref.
 - Ink coverage: 5 of 5 inks above 1% of the frame in 7 of 10.
 
-That is the honest quality of this pipeline **on a dense subject**. It does not
-generalise: the same measurement on a sparse subject is close to 0, per rule 5
-above. Pick subjects accordingly.
+An earlier README instead reported 8/10 usable and five inks in 9/10, also with
+zero dead frames. These counts cannot be reconciled from the repository:
+the individual raw frames, sidecars, immutable preset/runtime versions and
+scoring criteria were not published. "Usable" and "legible" were not defined
+as the same criterion. Neither account establishes a current preset hit rate.
+A future benchmark needs a versioned corpus, sidecars, criteria and per-frame
+metrics before a single current result can be quoted. Sparse-subject failures
+remain separate observations, not a measured population success rate.
 
 ### Prompts that minted these refs
 
