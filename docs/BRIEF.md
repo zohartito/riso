@@ -316,8 +316,10 @@ Three things learned that generalise past this repo:
 `docs/phase5-cropped-sheet.png` against `docs/phase5-outline-fix-sheet.png`:
 same three subjects, same seed, one setting added.
 
-`crop_keep = 0.71` in the preset means *deliver the densest 71% of the frame,
-rescaled back to full size*. `post.content_crop` slides a target-sized window
+`crop_keep = 0.71` in the preset means *keep a window 71% of each dimension,
+about 50.4% of the area, then rescale*. Dimensions are rounded to pixels:
+an 896×1152 latent frame uses a 636×818 window. A final aspect-ratio crop can
+trim it further before delivery. `post.content_crop` slides a target-sized window
 and keeps the placement holding the most ink boundaries — large flat shapes
 carry none, so the style reference always loses that competition to the
 subject. The upscale afterwards costs nothing visible because `palette_lock`

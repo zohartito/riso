@@ -20,7 +20,7 @@ ref = "refs/style-flat-mosaic.png"
 strength = 0.08          # usable Redux band is 0.05-0.15
 steps = 4                # schnell; 8 was measured and changes nothing
 
-# Deliver the densest 71% of the frame, rescaled back to full size. Whatever
+# Keep a window 71% of each dimension (~50.4% of the area), then rescale. Whatever
 # the subject does not fill, Redux fills with the reference, so the frame
 # always has margin worth discarding.
 #
