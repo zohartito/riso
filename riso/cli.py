@@ -116,6 +116,11 @@ def generate(
 
     if out is None:
         out = OUT_DIR / f"{style['name']}-{slugify(prompt)}-{seed}-{uuid.uuid4().hex}.png"
+    if not out.suffix:
+        out = out.with_suffix(".png")
+    image_format = Image.registered_extensions().get(out.suffix.lower())
+    if image_format not in Image.SAVE:
+        raise ValueError(f"unsupported output extension: {out.suffix}")
     sidecar = out.with_suffix(".json")
     raw_out = out.with_name(f"{out.stem}-raw.png")
     targets = [out, sidecar] + ([raw_out] if keep_raw else [])
@@ -203,7 +208,7 @@ def generate(
 
         out.parent.mkdir(parents=True, exist_ok=True)
         with out.open("xb") as handle:
-            art.save(handle)
+            art.save(handle, format=image_format)
 
         if keep_raw:
             with raw_out.open("xb") as handle:

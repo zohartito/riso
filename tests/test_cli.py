@@ -232,3 +232,22 @@ def test_delivered_image_preserves_exact_aspect(aspect, crop_keep, tmp_path, mon
         assert art.width * b == art.height * a
         assert 0.8 <= art.width * art.height / cli.BASE_PIXELS**2 <= 1.15
         assert json.loads(out.with_suffix(".json").read_text())["size"] == list(art.size)
+
+
+def test_output_without_extension_saves_as_png(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    out = cli.generate("crowd", "tennis", seed=7, out=tmp_path / "result")
+    assert out == tmp_path / "result.png"
+    with Image.open(out) as art:
+        assert art.format == "PNG"
+
+
+def test_unsupported_output_extension_fails_before_generation(tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("validate the extension before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    with pytest.raises(ValueError, match="unsupported output extension"):
+        cli.generate("crowd", "tennis", out=tmp_path / "result.unknown")
+    assert not list(tmp_path.iterdir())
