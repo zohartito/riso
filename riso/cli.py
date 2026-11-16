@@ -28,7 +28,7 @@ from riso import post
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
 from riso.styles import REPO_ROOT, STRENGTH_BAND, available_styles, load_style
 
-OUT_DIR = REPO_ROOT / "out"
+OUT_DIR = Path("out")
 
 # ~1 MP total, which is what schnell was trained around, snapped to a multiple
 # the latent can hold exactly.

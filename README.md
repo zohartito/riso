@@ -19,6 +19,10 @@ python -m pytest -q
 
 `python -m riso` works identically if you would rather not install.
 
+Non-editable installs (`python -m pip install .`) also include the shipped
+styles, palettes, workflow and reference images. Output is written to `out/`
+under your current working directory, including when installed from a wheel.
+
 ## Generate
 
 Generation requires a separately installed, running **ComfyUI** and three model

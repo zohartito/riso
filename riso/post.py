@@ -29,7 +29,9 @@ from typing import Any, Dict, List, Sequence, Tuple, Union
 import numpy as np
 from PIL import Image
 
-PALETTE_DIR = Path(__file__).resolve().parent.parent / "palettes"
+from riso.resources import ASSET_ROOT
+
+PALETTE_DIR = ASSET_ROOT / "palettes"
 
 RGB = Tuple[int, int, int]
 Palette = Sequence[RGB]

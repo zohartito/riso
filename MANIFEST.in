@@ -1,0 +1,4 @@
+include styles/*.toml
+include palettes/*.json
+include workflows/*.json
+include refs/*.png

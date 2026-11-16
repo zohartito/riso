@@ -3,3 +3,6 @@ numpy==2.4.6
 pillow==13.0.0
 requests==2.34.2
 pytest==9.2.0
+# Offline wheel smoke test uses the declared build backend.
+setuptools==84.2.1
+wheel==0.48.0

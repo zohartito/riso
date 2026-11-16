@@ -14,7 +14,9 @@ import tomllib
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from riso.resources import ASSET_ROOT
+
+REPO_ROOT = ASSET_ROOT
 STYLE_DIR = REPO_ROOT / "styles"
 
 # Measured band for Redux strength — see refs/srefs.md. Outside it the node

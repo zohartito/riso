@@ -14,7 +14,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-WORKFLOW_DIR = Path(__file__).resolve().parent.parent / "workflows"
+from riso.resources import ASSET_ROOT
+
+WORKFLOW_DIR = ASSET_ROOT / "workflows"
 DEFAULT_HOST = "127.0.0.1:8188"
 
 Workflow = Dict[str, Any]
