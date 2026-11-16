@@ -22,7 +22,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from riso import post
 from riso.comfy import Comfy, ComfyError, apply_params, load_workflow
@@ -52,7 +52,7 @@ def dimensions(
     base: int = BASE_PIXELS,
     multiple: int = LATENT_MULTIPLE,
 ) -> Tuple[int, int]:
-    """Pixel size for an aspect ratio, holding total area near ``base**2``."""
+    """Latent size near the aspect ratio, holding area near ``base**2``."""
     ratio_w, ratio_h = ratio
     scale = base / math.sqrt(ratio_w * ratio_h)
 
@@ -105,7 +105,12 @@ def generate(
     """Generate one image and return the path it was written to."""
     style = load_style(style_name)
     settings = style["generate"]
-    width, height = dimensions(parse_aspect(aspect))
+    ratio = parse_aspect(aspect)
+    width, height = dimensions(ratio)
+    divisor = math.gcd(*ratio)
+    ratio_w, ratio_h = (side // divisor for side in ratio)
+    factor = max(1, min(width // ratio_w, height // ratio_h))
+    delivered_size = (ratio_w * factor, ratio_h * factor)
     if seed is None:
         seed = random.randrange(2**31)
 
@@ -191,6 +196,9 @@ def generate(
                 raw, colors, (round(width * keep), round(height * keep))
             ).resize((width, height), Image.LANCZOS)
 
+        # Latent multiples approximate the ratio; trim to an exact integer
+        # ratio before adding texture so the final grain stays at pixel scale.
+        framed = ImageOps.fit(framed, delivered_size, method=Image.LANCZOS)
         art = post.compose(framed, preset)
 
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -216,7 +224,8 @@ def generate(
                 ),
                 "seed": seed,
                 "steps": settings.get("steps"),
-                "size": [width, height],
+                "size": list(delivered_size),
+                "latent_size": [width, height],
                 "crop_keep": keep,
                 "post": preset,
             },

@@ -135,12 +135,14 @@ def test_gen_writes_a_finished_png_and_a_sidecar(tmp_path, monkeypatch):
     with Image.open(out) as art:
         # cropping to the subject must not change what the caller asked for:
         # --ar 3:4 delivers 3:4 at full size, whatever the crop threw away
-        assert art.size == cli.dimensions((3, 4))
+        assert art.size == (864, 1152)
+        assert art.width * 4 == art.height * 3
     assert out.with_name("shot-raw.png").is_file()
 
     record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
     assert record["seed"] == 4242
-    assert record["size"] == list(cli.dimensions((3, 4)))
+    assert record["size"] == [864, 1152]
+    assert record["latent_size"] == list(cli.dimensions((3, 4)))
     assert record["model"] == "flux1-schnell-fp8.safetensors"
     assert record["post"]["grain"]["seed"] == 4242
     assert "Non-Commercial" in record["licence"]
@@ -215,3 +217,18 @@ def test_output_collision_is_rejected_before_generation(existing, tmp_path, monk
     with pytest.raises(FileExistsError):
         cli.generate("crowd", "tennis", seed=7, out=tmp_path / "shot.png", keep_raw=True)
     assert target.read_bytes() == b"keep this artifact"
+
+
+@pytest.mark.parametrize("aspect", ["3:4", "4:5", "4:3", "2:3", "16:9", "6:8", "1:1"])
+@pytest.mark.parametrize("crop_keep", [0.71, 1.0])
+def test_delivered_image_preserves_exact_aspect(aspect, crop_keep, tmp_path, monkeypatch):
+    style = styles.load_style("tennis")
+    style["generate"]["crop_keep"] = crop_keep
+    monkeypatch.setattr(cli, "load_style", lambda name: style)
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    out = cli.generate("crowd", "tennis", aspect=aspect, seed=7, out=tmp_path / "art.png")
+    a, b = cli.parse_aspect(aspect)
+    with Image.open(out) as art:
+        assert art.width * b == art.height * a
+        assert 0.8 <= art.width * art.height / cli.BASE_PIXELS**2 <= 1.15
+        assert json.loads(out.with_suffix(".json").read_text())["size"] == list(art.size)

@@ -44,7 +44,10 @@ Two runs naming the same style differ in subject and seed and nothing else.
 
 `crop_keep` delivers the densest part of the frame at the size you asked for:
 whatever the subject does not fill, the style reference fills with its own
-shapes, so the crop trades that away. `--ar 3:4` still gives 3:4 at full size.
+shapes, so the crop trades that away. ComfyUI generates near one megapixel at
+latent-compatible dimensions; a final crop preserves the exact requested ratio
+before the post-pass. For example, `--ar 3:4` delivers 864×1152 from an 896×1152
+latent frame. The sidecar records both delivered `size` and `latent_size`.
 
 `docs/phase5-cropped-sheet.png` is three subjects through one preset, on the
 first seed for each, no hunting. Earlier sheets are kept beside it as the
