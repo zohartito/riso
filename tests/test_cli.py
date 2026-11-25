@@ -10,6 +10,7 @@ import json
 import math
 
 import pytest
+import requests
 from PIL import Image
 
 from riso import cli, styles
@@ -135,12 +136,14 @@ def test_gen_writes_a_finished_png_and_a_sidecar(tmp_path, monkeypatch):
     with Image.open(out) as art:
         # cropping to the subject must not change what the caller asked for:
         # --ar 3:4 delivers 3:4 at full size, whatever the crop threw away
-        assert art.size == cli.dimensions((3, 4))
-    assert out.with_name("shot-raw.png").is_file()
+        assert art.size == (864, 1152)
+        assert art.width * 4 == art.height * 3
+    assert out.with_name("shot.png-raw.png").is_file()
 
-    record = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    record = json.loads(out.with_name("shot.png.json").read_text(encoding="utf-8"))
     assert record["seed"] == 4242
-    assert record["size"] == list(cli.dimensions((3, 4)))
+    assert record["size"] == [864, 1152]
+    assert record["latent_size"] == list(cli.dimensions((3, 4)))
     assert record["model"] == "flux1-schnell-fp8.safetensors"
     assert record["post"]["grain"]["seed"] == 4242
     assert "Non-Commercial" in record["licence"]
@@ -176,3 +179,158 @@ def test_gen_reports_a_dead_comfyui_instead_of_traceback(capsys, monkeypatch):
 def test_styles_subcommand_lists_presets(capsys):
     assert cli.main(["styles"]) == 0
     assert "tennis" in capsys.readouterr().out.split()
+
+
+def test_dead_comfyui_points_to_a_public_launch_command(capsys, monkeypatch):
+    class Down(_StubComfy):
+        def is_up(self):
+            return False
+
+    monkeypatch.setattr(cli, "Comfy", Down)
+    assert cli.main(["gen", "anything", "--style", "tennis"]) == 1
+    error = capsys.readouterr().err
+    assert "python main.py --listen 127.0.0.1 --port 8188" in error
+    assert "docs/generation-box.md" in error
+
+
+def test_default_outputs_keep_prompts_with_the_same_slug(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    monkeypatch.setattr(cli, "OUT_DIR", tmp_path)
+    prefix = "a crowd of tennis spectators seen from behind at "
+    first = cli.generate(prefix + "dawn", "tennis", seed=7)
+    original = first.read_bytes()
+    second = cli.generate(prefix + "dusk", "tennis", seed=7)
+    assert first != second
+    assert first.read_bytes() == original
+    assert len(list(tmp_path.glob("*.png"))) == 2
+    assert len(list(tmp_path.glob("*.json"))) == 2
+
+
+@pytest.mark.parametrize("existing", ["shot.png", "shot.png.json", "shot.png-raw.png"])
+def test_output_collision_is_rejected_before_generation(existing, tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("output conflicts must be checked before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    target = tmp_path / existing
+    target.write_bytes(b"keep this artifact")
+    with pytest.raises(FileExistsError):
+        cli.generate("crowd", "tennis", seed=7, out=tmp_path / "shot.png", keep_raw=True)
+    assert target.read_bytes() == b"keep this artifact"
+
+
+@pytest.mark.parametrize("aspect", ["3:4", "4:5", "4:3", "2:3", "16:9", "6:8", "1:1"])
+@pytest.mark.parametrize("crop_keep", [0.71, 1.0])
+def test_delivered_image_preserves_exact_aspect(aspect, crop_keep, tmp_path, monkeypatch):
+    style = styles.load_style("tennis")
+    style["generate"]["crop_keep"] = crop_keep
+    monkeypatch.setattr(cli, "load_style", lambda name: style)
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    out = cli.generate("crowd", "tennis", aspect=aspect, seed=7, out=tmp_path / "art.png")
+    a, b = cli.parse_aspect(aspect)
+    with Image.open(out) as art:
+        assert art.width * b == art.height * a
+        assert 0.8 <= art.width * art.height / cli.BASE_PIXELS**2 <= 1.15
+        assert json.loads(out.with_name(out.name + ".json").read_text())["size"] == list(art.size)
+
+
+def test_output_without_extension_saves_as_png(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    out = cli.generate("crowd", "tennis", seed=7, out=tmp_path / "result")
+    assert out == tmp_path / "result.png"
+    with Image.open(out) as art:
+        assert art.format == "PNG"
+
+
+def test_unsupported_output_extension_fails_before_generation(tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("validate the extension before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    with pytest.raises(ValueError, match="unsupported output extension"):
+        cli.generate("crowd", "tennis", out=tmp_path / "result.unknown")
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("name", ["../../outside/pwn", "../pwn", "a/b", "a\\b", ""])
+def test_preset_names_cannot_be_output_paths(name, tmp_path):
+    preset = tmp_path / "unsafe.toml"
+    preset.write_text(f'name = {json.dumps(name)}\n[generate]\nref = "refs/style-flat-mosaic.png"\n')
+    with pytest.raises(ValueError, match="style name"):
+        styles.load_style(preset)
+
+
+@pytest.mark.parametrize("kind", ["text", "outside_image", "symlink"])
+def test_reference_is_an_image_inside_refs(kind, tmp_path, monkeypatch):
+    root = tmp_path / "assets"
+    refs = root / "refs"
+    refs.mkdir(parents=True)
+    monkeypatch.setattr(styles, "REPO_ROOT", root)
+    external = tmp_path / "private.png"
+    Image.new("RGB", (8, 8)).save(external)
+    if kind == "text":
+        ref = refs / "not-an-image.png"
+        ref.write_text("synthetic non-image")
+    elif kind == "symlink":
+        ref = refs / "link.png"
+        ref.symlink_to(external)
+    else:
+        ref = external
+    preset = tmp_path / "unsafe.toml"
+    preset.write_text(f'[generate]\nref = "{ref.as_posix()}"\n')
+    with pytest.raises(ValueError, match="reference"):
+        styles.load_style(preset)
+
+
+@pytest.mark.parametrize("target", ["image", "sidecar", "raw", "parent"])
+def test_output_symlinks_are_rejected_before_generation(target, tmp_path, monkeypatch):
+    class Unused(_StubComfy):
+        def is_up(self):
+            pytest.fail("reject symlinks before ComfyUI")
+
+    monkeypatch.setattr(cli, "Comfy", Unused)
+    out = tmp_path / "art.png"
+    if target == "parent":
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        linked = tmp_path / "linked"
+        linked.symlink_to(outside, target_is_directory=True)
+        out = linked / "art.png"
+    else:
+        linked = {"image": out, "sidecar": out.with_name("art.png.json"),
+                  "raw": out.with_name("art.png-raw.png")}[target]
+        linked.symlink_to(tmp_path / "missing-target")
+    with pytest.raises(ValueError, match="symlink"):
+        cli.generate("crowd", "tennis", out=out, keep_raw=True)
+    assert not (tmp_path / "missing-target").exists()
+
+
+@pytest.mark.parametrize("failure", [requests.ConnectionError("offline"), TimeoutError("wait expired")])
+def test_transport_errors_are_controlled_cli_errors(failure, tmp_path, monkeypatch, capsys):
+    class Failed(_StubComfy):
+        def upload_image(self, path):
+            if isinstance(failure, requests.RequestException):
+                raise failure
+            return super().upload_image(path)
+
+        def generate(self, workflow):
+            raise failure
+
+    monkeypatch.setattr(cli, "Comfy", Failed)
+    assert cli.main(["gen", "crowd", "--style", "tennis", "--out", str(tmp_path / "art.png")]) == 1
+    assert "riso:" in capsys.readouterr().err
+    assert not list(tmp_path.iterdir())
+
+
+def test_output_formats_keep_separate_sidecars(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "Comfy", _StubComfy)
+    first = cli.generate("dawn crowd", "tennis", seed=7, out=tmp_path / "art.jpg", keep_raw=True)
+    second = cli.generate("dusk crowd", "tennis", seed=7, out=tmp_path / "art.webp", keep_raw=True)
+    for out, prompt in [(first, "dawn crowd"), (second, "dusk crowd")]:
+        record = json.loads(out.with_name(out.name + ".json").read_text())
+        assert record["prompt"] == prompt
+        assert out.with_name(out.name + "-raw.png").is_file()
+        assert out.is_file()
+    assert len(list(tmp_path.glob("*.json"))) == 2

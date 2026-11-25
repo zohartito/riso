@@ -193,6 +193,25 @@ def test_tonal_span_separates_a_real_frame_from_a_dead_one():
     assert post.tonal_span(Image.new("RGB", (16, 16), (10, 60, 160))) == 0.0
 
 
+def test_luma_loses_equal_lightness_hue_boundaries():
+    arr = np.empty((64, 64, 3), dtype=np.uint8)
+    arr[:, :32] = (200, 60, 60)
+    arr[:, 32:] = (0, 143, 0)
+    source = Image.fromarray(arr)
+    palette = post.load_palette("tennis-felt")
+    assert post.tonal_span(source) < post.FLAT_FRAME_SPAN
+    assert len(_unique_colors(post.palette_lock(source, palette, "luma"))) == 1
+    assert len(_unique_colors(post.palette_lock(source, palette, "nearest"))) == 2
+
+
+@pytest.mark.parametrize("detail_rows, inks", [(1, 1), (4, 2)])
+def test_luma_small_details_depend_on_percentile_clipping(detail_rows, inks):
+    arr = np.full((100, 100, 3), 255, dtype=np.uint8)
+    arr[:detail_rows] = 0
+    source = Image.fromarray(arr)
+    assert len(_unique_colors(post.palette_lock(source, [(0, 0, 0), (255, 255, 255)], "luma"))) == inks
+
+
 def test_palette_lock_rejects_an_unknown_mode():
     with pytest.raises(ValueError):
         post.palette_lock(_noise_image(), post.load_palette("tennis-felt"), "median")

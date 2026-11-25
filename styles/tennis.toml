@@ -1,28 +1,29 @@
 # tennis — dense flat reference over the tennis-felt palette.
 #
-# The reference is FLAT on purpose. A style reference teaches rendering mode,
-# not just colour: a dimensional reference lets the base model fall back to
-# photoreal, whatever the prompt says. See refs/srefs.md.
+# The reference is FLAT on purpose: it worked better than the dimensional
+# reference in the recorded schnell/Redux comparison. See refs/srefs.md for
+# the tested prompt and seed; this is not a guarantee for other inputs.
 #
-# It is also DENSE on purpose, and object-free: density fills the frame, and
-# anything memorable in a reference gets copied into the output.
+# It is also DENSE on purpose, and object-free: the recorded comparisons
+# favoured density, while distinctive reference motifs sometimes copied across.
 #
-# Known cost of this particular ref: its thin region borders transfer as thin
-# outlines around figures, which the look spec forbids. refs/style-flat-planes
-# .png does not do that and gives emptier compositions — swap the line below
-# to trade one for the other. Measured both ways in docs/BRIEF.md.
+# The border-transfer explanation was retracted: both mosaic and border-free
+# planes references produced outlines with the old editorial wording. Paper
+# wording reduced those outlines in the crowd comparisons. Mosaic stays for
+# its denser compositions; planes was rejected, not an outline-free alternative.
+# Both failed the sparse test. See docs/BRIEF.md Phase 5 and refs/srefs.md rule 4.
 
 name = "tennis"
 description = "Flat editorial riso: felt-green court, pink and navy crowd, chartreuse accent."
 
 [generate]
 ref = "refs/style-flat-mosaic.png"
-strength = 0.08          # usable Redux band is 0.05-0.15
+strength = 0.08          # starting band from the recorded sweep: 0.05-0.15
 steps = 4                # schnell; 8 was measured and changes nothing
 
-# Deliver the densest 71% of the frame, rescaled back to full size. Whatever
-# the subject does not fill, Redux fills with the reference, so the frame
-# always has margin worth discarding.
+# Keep a window 71% of each dimension (~50.4% of the area), then rescale. Whatever
+# the subject did not fill in the recorded examples often carried reference
+# shapes; inspect each output to decide whether the crop helps.
 #
 # Generating LARGER and cropping back was tried first and is worse: at 1.15x
 # and 1.35x Flux draws fewer, bigger figures, so the crowd stops being a crowd.
@@ -35,12 +36,10 @@ crop_keep = 0.71
 # the rendering mode, which frees the strength down to 0.08 where the subject
 # survives every seed tested. Measured 2026-08-15, 6 seeds per setting.
 #
-# The medium word is the outline switch, and it is not a neutral phrase. This
-# said "flat editorial illustration" until 2026-08-15 and every crowd came back
-# in heavy contour lines, because that phrase means vector line art. Naming a
-# paper medium instead drops thin-dark-line coverage from 3.64% to 0.31% —
-# a look-spec violation removed by two words. Deleting the phrase does not
-# work and a "no outlines" clause does not work; only substitution does.
+# This said "flat editorial illustration" until 2026-08-15. In the recorded
+# crowd comparisons, paper wording reduced thin-dark-line coverage from
+# 3.64% to 0.31%; deletion and a "no outlines" clause did not help. This is
+# the reason for the current suffix, not an outline guarantee for every seed.
 prompt_suffix = ", torn paper collage, matte paper shapes, solid blocks of colour, no shading, no gradients, bold simple shapes"
 
 [post]

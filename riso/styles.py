@@ -1,8 +1,8 @@
 """Style presets: reference image + palette + post settings, as TOML data.
 
-A preset is the unit of series consistency — two runs that name the same style
-may differ in subject and seed and in nothing else. Everything a style decides
-lives in ``styles/*.toml``, never in the CLI.
+A preset groups style settings, but its name does not freeze the referenced
+files, workflow, runtime or the CLI's aspect ratio. Hold those fixed as well
+when making a series.
 
 The ``[post]`` table is passed to ``post.compose`` verbatim, so its schema is
 that function's preset schema and nothing here needs to know about halftones.
@@ -10,15 +10,20 @@ that function's preset schema and nothing here needs to know about halftones.
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from PIL import Image
+
+from riso.resources import ASSET_ROOT
+
+REPO_ROOT = ASSET_ROOT
 STYLE_DIR = REPO_ROOT / "styles"
 
-# Measured band for Redux strength — see refs/srefs.md. Outside it the node
-# either copies the reference outright or stops carrying style at all.
+# Starting band from the recorded crowd/seed sweep, not a universal limit.
+# See refs/srefs.md for model, prompt and reference scope.
 STRENGTH_BAND = (0.05, 0.15)
 
 Style = Dict[str, Any]
@@ -38,6 +43,9 @@ def load_style(name: Union[str, Path]) -> Style:
         raise FileNotFoundError(f"no style preset at {path}")
 
     data = tomllib.loads(path.read_text(encoding="utf-8"))
+    data.setdefault("name", path.stem)
+    if not isinstance(data["name"], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", data["name"]):
+        raise ValueError("style name must contain only letters, digits, underscores or hyphens")
 
     generate = data.get("generate")
     if not isinstance(generate, dict) or "ref" not in generate:
@@ -48,6 +56,14 @@ def load_style(name: Union[str, Path]) -> Style:
         ref = REPO_ROOT / ref
     if not ref.is_file():
         raise FileNotFoundError(f"{path} points at a missing reference: {ref}")
+    ref = ref.resolve()
+    if not ref.is_relative_to((REPO_ROOT / "refs").resolve()):
+        raise ValueError("style reference must be inside the installed or source refs/ directory")
+    try:
+        with Image.open(ref) as image:
+            image.verify()
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"style reference must be a readable image: {ref}") from exc
     generate["ref"] = ref
 
     strength = float(generate.get("strength", 0.1))
@@ -59,7 +75,6 @@ def load_style(name: Union[str, Path]) -> Style:
     if preset is not None and not isinstance(preset, dict):
         raise ValueError(f"{path} has a [post] that is not a table")
 
-    data.setdefault("name", path.stem)
     return data
 
 

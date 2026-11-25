@@ -60,34 +60,32 @@ one-off pretty images are not the deliverable.**
 - 1–2px RGB channel misregistration
 - optional halftone on a duplicated luminance channel
 
-## Two laws about driving the model — these are not about tennis
+## Two observations from the schnell/Redux experiments
 
-Both were paid for in generation time on this repo, and neither is specific to
-it. If you are reading this before touching a prompt or a reference, read these
-two things first. Measurements and workings are in `refs/srefs.md`.
+These 2026-08-15 observations are bounded by the prompts, references, presets
+and seeds in `refs/srefs.md`. They are tuning guidance, not model-wide laws;
+changed inputs still require human inspection.
 
-**1. A negative cannot overrule the convention a noun carries. It can only trim
-what survives once the noun agrees.**
+**1. Medium substitution helped more than negation in the crowd comparison.**
 
 The prompt said "flat editorial illustration" and every crowd came back in
-heavy contour lines, because that phrase means vector line art. Adding "no
+heavy contour lines. A vector-line-art association is an interpretation. Adding "no
 outlines, no linework" moved thin-line coverage from 3.64% to 3.75% — nothing.
 Adding the *same clause* to "cut-paper collage" moved it from 1.79% to 0.94%.
-Change the noun first; the negative only tidies up afterwards. Naming a paper
+Try the medium phrase first in this preset. Naming a paper
 medium instead of an illustration medium took the same measure to 0.31%.
 
-**2. Whatever the subject does not fill, the style reference fills.**
+**2. Reference motifs dominated one sparse prompt against four references.**
 
-A sparse subject does not render weakly — it renders *as the reference*. The
-same prompt against four different references produced no subject in all four:
+The tested sparse prompt against four references produced no subject in all four:
 the poster ref's blocks, the planes ref's planes, the mosaic ref's regions, and
 from a patchwork-of-squares reference a literal checkerboard. Ask for torn
 paper collage and the empty regions become torn paper.
 
-Three consequences, all load-bearing: choose subjects that fill the frame
+Practical starting points for this preset: choose subjects that fill the frame
 (see "Subject selection is part of the style" below); judge a candidate
 reference on one dense **and** one sparse subject, never dense alone; and crop
-to the subject, because the space it does not occupy is never neutral.
+to the subject where that helps. Other prompts and seeds have not been ruled out.
 
 ## Existing assets — do not re-clone or re-download
 
@@ -192,7 +190,7 @@ seeds 8 / 55 / 21. Measured against the look spec rather than eyeballed:
 | zero gradients except grain | flat areas vary by sd 2.07 levels; grain alone predicts 2.0. The ramp is gone. |
 | 2px tooth | pixel differences inside a grain block 5–6, across a block boundary 21 |
 | 1–2px channel misregistration | R-to-B offset 4px, i.e. ±2px per plate |
-| no outlines | nothing in the chain draws one; forms read by colour adjacency and press fringe |
+| no outlines | the post-pass adds no contour strokes, but can preserve outlines in the generated source; inspect the result |
 | 3–5 flat colours | 5 inks locked, then modulated by grain and halftone as the spec allows |
 
 **Three findings the sheet also produced — Phase 4 material, not shipped:**
@@ -237,13 +235,15 @@ is in the docstring so nobody re-tries it blind.
 **b) New object-free reference — done.** `style-flat-mosaic.png` replaces the
 poster ref. The white circle is gone. Two new rules came out of minting it, both
 in `refs/srefs.md`: a reference contributes any distinctive *object*, and — the
-one that matters more — **a sparse subject renders as the reference, whatever
-the reference is.** Four different refs, same sparse prompt, no subject in any
-of them.
+one that matters more — **one sparse prompt rendered reference motifs against
+all four tested references.** This does not establish failure for every sparse
+prompt or every seed.
 
-**c) Hit rate: 0 dead and 10 legible crowds out of 10 unhunted seeds** on a
-dense subject. Five inks above 1% of frame in 7 of 10. On a sparse subject the
-same measurement is close to zero.
+**c) Historical run notes: 0 dead and 10 legible crowds out of 10 unhunted
+seeds** on a dense subject; five inks above 1% of frame in 7 of 10. The raw
+corpus and versioned criteria are absent, and the README formerly gave
+different counts. See `refs/srefs.md` for that discrepancy; these notes do not
+establish a reproducible hit rate for the current preset or sparse subjects.
 
 **d) The sheet.** Panel 1 (crowd) is the best image this repo has made. Panel 3
 (handshake) now reads as two hands, which it did not in Phase 3. Panel 2
@@ -257,7 +257,7 @@ same measurement is close to zero.
   reference tested, and the erosion measurement originally cited here does not
   detect outlines at all. Full retraction in `refs/srefs.md` rule 4, evidence
   in `docs/outlines-come-from-the-model.png`. Still unsolved.
-- Panel 2 is a failure, and picking a different seed would not fix it.
+- Panel 2 is a failure; the available samples do not establish whether another seed could fix it.
 
 ### Phase 5a — the reference A/B, so the choice is between two visible things
 
@@ -285,23 +285,22 @@ The only argument for the planes ref was outlines, and outlines turned out to
 come from the model. On the axis that actually separates them the mosaic wins
 two panels of three. `docs/phase5-planes-sheet.png` is kept as the record.
 
-### Phase 5b — the outlines are fixed, by one phrase
+### Phase 5b — paper wording reduced outlines in the compared frames
 
 `docs/outlines-fixed-by-the-medium-word.png`, and the sheet it produces is
 `docs/phase5-outline-fix-sheet.png`.
 
-The prompt said "flat editorial illustration", which in training data means
-vector line art. Naming a paper medium instead — **"torn paper collage, matte
+The tested prompt said "flat editorial illustration". Naming a paper medium
+instead — **"torn paper collage, matte
 paper shapes"** — drops thin-dark-line coverage from 3.64% to 0.31%, against a
 0.00–0.04% floor for genuinely line-free images. The look spec's "no outlines"
-bullet is now met.
+bullet was judged improved in the compared frames, not guaranteed across seeds.
 
-Three things learned that generalise past this repo:
+Three lessons from these comparisons:
 
 - **Substitution beats deletion and negation.** A "no outlines" clause moved
-  the number from 3.64% to 3.75%, i.e. not at all. The model does not take
-  instruction not to draw something; it takes instruction to draw a different
-  thing.
+  the number from 3.64% to 3.75%, i.e. no measured improvement in this test.
+  It does not establish a model-wide inability to follow negative instructions.
 - **Validate a metric before you trust it.** The erosion measure that blamed
   the reference was never tested against a known-positive and a
   known-negative. Its replacement was, before it was used.
@@ -314,11 +313,13 @@ Three things learned that generalise past this repo:
 `docs/phase5-cropped-sheet.png` against `docs/phase5-outline-fix-sheet.png`:
 same three subjects, same seed, one setting added.
 
-`crop_keep = 0.71` in the preset means *deliver the densest 71% of the frame,
-rescaled back to full size*. `post.content_crop` slides a target-sized window
+`crop_keep = 0.71` in the preset means *keep a window 71% of each dimension,
+about 50.4% of the area, then rescale*. Dimensions are rounded to pixels:
+an 896×1152 latent frame uses a 636×818 window. A final aspect-ratio crop can
+trim it further before delivery. `post.content_crop` slides a target-sized window
 and keeps the placement holding the most ink boundaries — large flat shapes
-carry none, so the style reference always loses that competition to the
-subject. The upscale afterwards costs nothing visible because `palette_lock`
+carry few. Reference patterns can also have boundaries, so this does not
+identify the subject. In the compared frames, the upscale had no visible cost because `palette_lock`
 re-quantises to flat plates, and grain lands at the delivered size, so the 2px
 tooth stays 2px. `--ar 3:4` still delivers 3:4 at full resolution.
 
@@ -339,10 +340,10 @@ to describe form without outlines or shading, and it needs repeated elements to
 do that — a crowd of caps, a field of waves, a bank of faces. That is what the
 reference material (Ege Berkina, Gizem Akdag) is made of.
 
-A lone figure on an empty court gives the pipeline nothing to work with, and
-the empty space does not stay empty: Redux fills it with the reference. Choose
-subjects that fill the frame with repeated elements. This is a property of the
-aesthetic, not a defect to be fixed.
+The tested lone-player prompt lost its subject, with reference motifs filling
+the frame. Dense repeating subjects are the intended scope of this preset;
+other sparse prompts or seeds have not been proven impossible. Inspect each
+output for subject presence and framing.
 
 ## Deferred — do not build these now
 

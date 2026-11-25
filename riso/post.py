@@ -29,7 +29,9 @@ from typing import Any, Dict, List, Sequence, Tuple, Union
 import numpy as np
 from PIL import Image
 
-PALETTE_DIR = Path(__file__).resolve().parent.parent / "palettes"
+from riso.resources import ASSET_ROOT
+
+PALETTE_DIR = ASSET_ROOT / "palettes"
 
 RGB = Tuple[int, int, int]
 Palette = Sequence[RGB]
@@ -165,9 +167,9 @@ def _oklab_lightness(arr: np.ndarray) -> np.ndarray:
 def tonal_span(img: Image.Image) -> float:
     """Oklab lightness range of an image, ignoring the outer 2% at each end.
 
-    The number `luma` mode separates on. Near zero means the frame carries no
-    form at all — which is how a failed generation looks, and worth checking
-    before a post-pass dresses it up.
+    The number `luma` mode separates on. Near zero means little lightness
+    contrast survives the clipping; hue-defined forms and small details may
+    still exist, but luma mapping can discard them.
     """
     low, high = np.percentile(_oklab_lightness(_to_array(img)), (2.0, 98.0))
     return float(high) - float(low)
@@ -218,12 +220,11 @@ def _lock_luma(arr: np.ndarray, colors: List[RGB]) -> np.ndarray:
 
 
 def detail_map(img: Image.Image, palette: Palette, tile: int = 32) -> np.ndarray:
-    """Per-tile density of ink boundaries — where the *subject* is.
+    """Per-tile density of ink boundaries after luma palette mapping.
 
-    A crowd is hundreds of small regions and scores high. A torn-paper plane,
-    a sky, or any large flat shape scores near zero however colourful it is.
-    That distinction is the one that matters here, because the failure being
-    measured is a frame half-filled with handsome abstraction.
+    Many small contrasting regions score high; large flat interiors score
+    low. This measures boundary density, not subject identity: reference
+    patterns can score higher than the intended subject.
     """
     plates = np.asarray(palette_lock(img, palette, "luma"), dtype=np.int32)
     key = plates[..., 0] * 65536 + plates[..., 1] * 256 + plates[..., 2]
@@ -242,17 +243,16 @@ def detail_map(img: Image.Image, palette: Palette, tile: int = 32) -> np.ndarray
 def content_crop(
     img: Image.Image, palette: Palette, size: Tuple[int, int], tile: int = 32
 ) -> Image.Image:
-    """Take the window of exactly ``size`` holding the most subject.
+    """Choose a crop by ink-boundary density on a tile grid.
 
-    The frame is generated larger than it ships and this chooses which part
-    ships: slide a target-sized window, keep the placement with the most ink
-    boundaries in it. Cropping rather than re-prompting is the cheap lever —
-    the subject Flux drew is usually good, it is just sharing the frame with a
-    lot of style reference, and the reference always loses this competition
-    because large flat shapes carry no boundaries.
+    Slide a target-sized window over ``detail_map`` and keep the placement
+    with the highest score. Reference patterns can also carry boundaries,
+    so this does not recognize the subject or guarantee useful framing.
+    Inspect each output for subject presence and framing.
 
-    Exact output size in, exact output size out: ``--ar 3:4`` still delivers
-    3:4 at full resolution, not whatever shape the subject happened to take.
+    A selected crop has exactly ``size`` pixels. If either source dimension
+    is no larger than its target, or the detail map is empty or has no
+    boundaries, return a copy at the source size.
     """
     target_w, target_h = int(size[0]), int(size[1])
     if target_w <= 0 or target_h <= 0:
@@ -299,8 +299,12 @@ def palette_lock(
     pixel can land on the *same* swatch and the image collapses to one field.
 
     ``luma`` ignores source hue and maps lightness bands onto the palette's own
-    lightness order. Form always survives, so it is the mapping a generated
-    frame wants; the cost is that source colour no longer chooses the ink.
+    lightness order. Forms need enough lightness contrast to fall into
+    different bands; equal-lightness colours can merge. Quantization and
+    2nd–98th percentile clipping can discard small details, and a clipped
+    lightness span below ``FLAT_FRAME_SPAN`` maps the whole frame to one ink.
+    Source colour no longer chooses the ink. Inspect hue-defined forms and
+    fine details after mapping.
     """
     colors = [tuple(int(c) for c in entry) for entry in palette]
     if len(colors) < 2:
